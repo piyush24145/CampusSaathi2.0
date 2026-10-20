@@ -1,7 +1,9 @@
 
 // Uses VITE_API_URL in production, or same-origin Vite proxy on dev server
+const rawApiUrl = import.meta.env.VITE_API_URL || "";
+const cleanBaseUrl = rawApiUrl.replace(/\/+$/, "");
 const API_BASE_URL =
-    import.meta.env.VITE_API_URL ||
+    cleanBaseUrl ||
     (typeof window !== "undefined" && (window.location.port === "5173" || window.location.port === "5174")
         ? ""
         : (typeof window !== "undefined" && window.location.hostname === "localhost"

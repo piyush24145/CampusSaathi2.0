@@ -32,8 +32,7 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pre-warm vector store and embedding model in a background thread so first PDF upload is instant
-    asyncio.create_task(asyncio.to_thread(get_vector_store))
+    # Fast boot so Render/Cloud health check passes immediately
     yield
 
 app = FastAPI(

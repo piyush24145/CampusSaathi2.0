@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import os
 from typing import Optional, List, Dict, Any
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -19,8 +20,9 @@ def get_vector_store():
     global _embedding_model, _vector_store
 
     if _vector_store is None:
+        model_name = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
         _embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+            model_name=model_name
         )
 
         _vector_store = Chroma(
