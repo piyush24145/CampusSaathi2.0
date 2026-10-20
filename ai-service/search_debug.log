@@ -1,0 +1,2232 @@
+
+[search_chunks] Query: 'give me all important there from this pdf', k=3
+[search_chunks] Total IDs in collection: 3
+[search_chunks] Raw results count: 0
+
+[search_chunks] Query: 'give me all important there from this pdf', k=3
+[search_chunks] EXCEPTION: 'C:\\Users\\piyus\\Desktop\\CampusSathi-AI\\ai-service\\chroma_db'
+Traceback (most recent call last):
+  File "C:\Users\piyus\Desktop\CampusSathi-AI\ai-service\app\vector_store.py", line 99, in search_chunks
+    vs = get_vector_store()
+  File "C:\Users\piyus\Desktop\CampusSathi-AI\ai-service\app\vector_store.py", line 25, in get_vector_store
+    _vector_store = Chroma(
+        collection_name="college_documents",
+        embedding_function=_embedding_model,
+        persist_directory=str(DB_DIR),
+    )
+  File "C:\Users\piyus\Desktop\CampusSathi-AI\ai-service\.venv\Lib\site-packages\langchain_chroma\vectorstores.py", line 374, in __init__
+    self._client = chromadb.PersistentClient(
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        path=persist_directory,
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        database=_database,
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\piyus\Desktop\CampusSathi-AI\ai-service\.venv\Lib\site-packages\chromadb\__init__.py", line 228, in PersistentClient
+    return ClientCreator(tenant=tenant, database=database, settings=settings)
+  File "C:\Users\piyus\Desktop\CampusSathi-AI\ai-service\.venv\Lib\site-packages\chromadb\api\client.py", line 69, in __init__
+    super().__init__(settings=settings)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\piyus\Desktop\CampusSathi-AI\ai-service\.venv\Lib\site-packages\chromadb\api\shared_system_client.py", line 25, in __init__
+    SharedSystemClient._create_system_if_not_exists(self._identifier, settings)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\piyus\Desktop\CampusSathi-AI\ai-service\.venv\Lib\site-packages\chromadb\api\shared_system_client.py", line 49, in _create_system_if_not_exists
+    return cls._identifier_to_system[identifier]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+KeyError: 'C:\\Users\\piyus\\Desktop\\CampusSathi-AI\\ai-service\\chroma_db'
+
+[search_chunks] Query: 'important dates', k=3
+[search_chunks] Total IDs in collection: 3
+[search_chunks] Collection count: 3
+[search_chunks] Stored docs count: 3
+  Doc 0: SAMPLE COLLEGE
+Academic Office • Demonstration Document
+NOTI...
+  Doc 1: is only sample data for software testing.
+2. Required docume...
+  Doc 2: Page 1 — General information
+4. Important instructions
+Check...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['CampusSathi_Sample_College_Notice.pdf_1_1', 'Brochure_2026-27_7.7.26.pdf_14_36', 'On-Device AI and Smart Reminders.pdf_10_15']], 'embeddings': None, 'documents': [['SAMPLE COLLEGE\nAcademic Office • Demonstration Document\nNOTICE: Examination Registration\nNotice No.: DEMO/EXAM/2026/014\nDate: 10 October 2026\nThis is a fictional sample notice created only to test the CampusSathi AI PDF extraction feature. It\nis not an official notice from any real college.\n1. Registration deadline\nStudents must submit the examination registration form by 20 November 2026, 5:00 PM. This date\nis only sample data for software testing.\n2. Required documents', None, None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'chunk_id': 1, 'start_index': 0, 'page_number': 1, 'source': 'CampusSathi_Sample_College_Notice.pdf'}, None, None]], 'distances': [[28.395151138305664, 30.18475341796875, 30.802282333374023]]}
+[search_chunks] Raw results count: 1
+  Result: dist=28.395151138305664, src=CampusSathi_Sample_College_Notice.pdf, p=1
+
+[search_chunks] Query: 'summarise the important dates', k=3
+[search_chunks] Total IDs in collection: 3
+[search_chunks] Collection count: 3
+[search_chunks] Stored docs count: 3
+  Doc 0: SAMPLE COLLEGE
+Academic Office • Demonstration Document
+NOTI...
+  Doc 1: is only sample data for software testing.
+2. Required docume...
+  Doc 2: Page 1 — General information
+4. Important instructions
+Check...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['On-Device AI and Smart Reminders.pdf_10_15', 'CampusSathi_Sample_College_Notice.pdf_1_1', 'Brochure_2026-27_7.7.26.pdf_14_36']], 'embeddings': None, 'documents': [[None, 'SAMPLE COLLEGE\nAcademic Office • Demonstration Document\nNOTICE: Examination Registration\nNotice No.: DEMO/EXAM/2026/014\nDate: 10 October 2026\nThis is a fictional sample notice created only to test the CampusSathi AI PDF extraction feature. It\nis not an official notice from any real college.\n1. Registration deadline\nStudents must submit the examination registration form by 20 November 2026, 5:00 PM. This date\nis only sample data for software testing.\n2. Required documents', None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[None, {'start_index': 0, 'source': 'CampusSathi_Sample_College_Notice.pdf', 'chunk_id': 1, 'page_number': 1}, None]], 'distances': [[21.838958740234375, 23.12030792236328, 24.840036392211914]]}
+[search_chunks] Raw results count: 1
+  Result: dist=23.12030792236328, src=CampusSathi_Sample_College_Notice.pdf, p=1
+
+[search_chunks] Query: 'anything extra important apart from this pdf give', k=3
+[search_chunks] Total IDs in collection: 3
+[search_chunks] Collection count: 3
+[search_chunks] Stored docs count: 3
+  Doc 0: SAMPLE COLLEGE
+Academic Office • Demonstration Document
+NOTI...
+  Doc 1: is only sample data for software testing.
+2. Required docume...
+  Doc 2: Page 1 — General information
+4. Important instructions
+Check...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['On-Device AI and Smart Reminders.pdf_10_15', 'CampusSathi_Sample_College_Notice.pdf_1_2', 'CampusSathi_Sample_College_Notice.pdf_1_3']], 'embeddings': None, 'documents': [[None, 'is only sample data for software testing.\n2. Required documents\nStudents should keep their college identity card, current semester details, and payment receipt\navailable while completing the form.\n3. Help desk\nFor this demo, students may contact the fictional Academic Help Desk at Room 101, Main\nAcademic Building, between 10:00 AM and 4:00 PM on working days.\nPage 1 — General information\n4. Important instructions', 'Page 1 — General information\n4. Important instructions\nCheck all entered details before submitting. Keep a copy of the confirmation page. If a field is\nunavailable, contact the academic office instead of guessing.\n5. Sample fee information\nThe sample registration fee for this demonstration is I1,200. This is fictional and must not be used\nfor real payments or college decisions.\nEnd of sample notice']], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[None, {'chunk_id': 2, 'start_index': 412, 'page_number': 1, 'source': 'CampusSathi_Sample_College_Notice.pdf'}, {'start_index': 774, 'chunk_id': 3, 'source': 'CampusSathi_Sample_College_Notice.pdf', 'page_number': 1}]], 'distances': [[16.48223304748535, 17.871191024780273, 19.061758041381836]]}
+[search_chunks] Raw results count: 2
+  Result: dist=17.871191024780273, src=CampusSathi_Sample_College_Notice.pdf, p=1
+  Result: dist=19.061758041381836, src=CampusSathi_Sample_College_Notice.pdf, p=1
+
+[search_chunks] Query: 'important part from this pdf', k=3
+[search_chunks] Total IDs in collection: 21
+[search_chunks] Collection count: 21
+[search_chunks] Stored docs count: 21
+  Doc 0: MS Dhoni: A Biography
+The Journey of an Indian Cricket Capta...
+  Doc 1: (T20Is). He became especially known for his finishing abilit...
+  Doc 2: attention. His aggressive batting style and wicketkeeping ab...
+  Doc 3: powerful middle-order batter. Later that year, he scored an ...
+  Doc 4: title. The victory was significant because it was the first ...
+  Doc 5: figure in Indian cricket.
+Success in Test Cricket
+Dhoni also...
+  Doc 6: In December 2014, during India's tour of Australia, Dhoni an...
+  Doc 7: The 2011 Cricket World Cup
+The 2011 ICC Men's Cricket World ...
+  Doc 8: over long-on to complete the chase. India won by six wickets...
+  Doc 9: moments in Indian cricket.
+Champions Trophy and Captaincy Le...
+  Doc 10: the captaincy of both formats. He remained available as a wi...
+  Doc 11: most in the format.
+As a batter, Dhoni became particularly f...
+  Doc 12: 2019 World Cup and International Retirement
+The 2019 ICC Cri...
+  Doc 13: Indian Premier League Career
+Dhoni's cricket career also bec...
+  Doc 14: The league gave fans another opportunity to watch his wicket...
+  Doc 15: Champions Trophy in 2013.
+Other notable records include his ...
+  Doc 16: lead India to major international trophies, contributed heav...
+  Doc 17: establish a model in which a wicketkeeper could be one of th...
+  Doc 18: T20 World Cup, 2011 ODI World Cup and 2013 Champions Trophy ...
+  Doc 19: achievement, but also a significant period in the developmen...
+  Doc 20: International Cricket Council (ICC): MS Dhoni Hall of Fame p...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['On-Device AI and Smart Reminders.pdf_10_15', 'Brochure_2026-27_7.7.26.pdf_12_32', '1 _ TESTS FOR BIOMOLECULES.pdf_2_4']], 'embeddings': None, 'documents': [[None, None, None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[None, None, None]], 'distances': [[16.012447357177734, 20.15577507019043, 20.334300994873047]]}
+[search_chunks] Raw results count: 0
+
+[search_chunks] Query: 'who is ms dhoni', k=3
+[search_chunks] Total IDs in collection: 21
+[search_chunks] Collection count: 21
+[search_chunks] Stored docs count: 21
+  Doc 0: MS Dhoni: A Biography
+The Journey of an Indian Cricket Capta...
+  Doc 1: (T20Is). He became especially known for his finishing abilit...
+  Doc 2: attention. His aggressive batting style and wicketkeeping ab...
+  Doc 3: powerful middle-order batter. Later that year, he scored an ...
+  Doc 4: title. The victory was significant because it was the first ...
+  Doc 5: figure in Indian cricket.
+Success in Test Cricket
+Dhoni also...
+  Doc 6: In December 2014, during India's tour of Australia, Dhoni an...
+  Doc 7: The 2011 Cricket World Cup
+The 2011 ICC Men's Cricket World ...
+  Doc 8: over long-on to complete the chase. India won by six wickets...
+  Doc 9: moments in Indian cricket.
+Champions Trophy and Captaincy Le...
+  Doc 10: the captaincy of both formats. He remained available as a wi...
+  Doc 11: most in the format.
+As a batter, Dhoni became particularly f...
+  Doc 12: 2019 World Cup and International Retirement
+The 2019 ICC Cri...
+  Doc 13: Indian Premier League Career
+Dhoni's cricket career also bec...
+  Doc 14: The league gave fans another opportunity to watch his wicket...
+  Doc 15: Champions Trophy in 2013.
+Other notable records include his ...
+  Doc 16: lead India to major international trophies, contributed heav...
+  Doc 17: establish a model in which a wicketkeeper could be one of th...
+  Doc 18: T20 World Cup, 2011 ODI World Cup and 2013 Champions Trophy ...
+  Doc 19: achievement, but also a significant period in the developmen...
+  Doc 20: International Cricket Council (ICC): MS Dhoni Hall of Fame p...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['MS_Dhoni_Biography.pdf_1_1', 'MS_Dhoni_Biography.pdf_5_21', 'MS_Dhoni_Biography.pdf_4_18']], 'embeddings': None, 'documents': [['MS Dhoni: A Biography\nThe Journey of an Indian Cricket Captain, Wicketkeeper and Finisher\nIntroduction\nMahendra Singh Dhoni, popularly known as MS Dhoni, is one of the most prominent figures in Indian\ncricket. Born on 7 July 1981 in Ranchi, he developed from a talented young cricketer into an\ninternational wicketkeeper-batter and captain. His international career ran from 2004 to 2019, during\nwhich he represented India across Tests, One-Day Internationals (ODIs) and Twenty20 Internationals', "International Cricket Council (ICC): MS Dhoni Hall of Fame profile and career statistics; ICC feature on\nMS Dhoni's career and legacy; Board of Control for Cricket in India (BCCI): retirement and career\nrecords.", "establish a model in which a wicketkeeper could be one of the central strategic players in a team.\nConclusion\nMS Dhoni's journey from domestic cricket in eastern India to the highest levels of international cricket\nis a story of long-term development and achievement. From his international debut in 2004 to his\nretirement in 2020, he played an important role in many of India's major cricketing moments. The 2007"]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'page_number': 1, 'chunk_id': 1, 'start_index': 0, 'source': 'MS_Dhoni_Biography.pdf'}, {'chunk_id': 21, 'source': 'MS_Dhoni_Biography.pdf', 'page_number': 5, 'start_index': 0}, {'source': 'MS_Dhoni_Biography.pdf', 'page_number': 4, 'chunk_id': 18, 'start_index': 1882}]], 'distances': [[10.802923202514648, 16.493907928466797, 19.10881805419922]]}
+[search_chunks] Raw results count: 3
+  Result: dist=10.802923202514648, src=MS_Dhoni_Biography.pdf, p=1
+  Result: dist=16.493907928466797, src=MS_Dhoni_Biography.pdf, p=5
+  Result: dist=19.10881805419922, src=MS_Dhoni_Biography.pdf, p=4
+
+[search_chunks] Query: 'how to reach triple it una from isbt', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['Brochure_2026-27_7.7.26.pdf_3_4', 'Brochure_2026-27_7.7.26.pdf_8_18', 'On-Device AI and Smart Reminders.pdf_9_12']], 'embeddings': None, 'documents': [['2 | P a g e  \n  \n.  \n1.   About IIIT UNA  \nIIIT Una is an institute of national importance set up, funded, and managed by the Ministry of \nEducation, Govt. of India under the Public-Private Partnership model. The institute started its \noperation in the year 2014 and currently offering undergraduate programs in B.Tech CSE, B.Tech \nCSE (Data Science), B.Tech CSE (Cyber Security) and B.Tech ECE disciplines. The Institute also', '#  Total credits for degree with Honors is 160+12 = 172.    \n  \n 7.  Faculty  \nThe faculty at IIIT Una are highly qualified and competent, delivering technical knowledge with \na strong emphasis on practical industrial exposure. For more information, please see the faculty \nprofiles available on Institute’s website.  \n 8.  Admissions  \nAdmission to any undergraduate B.Tech. requires that the applicant be eligible, go through the \nlaid-down admission procedure, and pay the prescribed fees.', None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'start_index': 0, 'source': 'Brochure_2026-27_7.7.26.pdf', 'page_number': 3, 'chunk_id': 4}, {'source': 'Brochure_2026-27_7.7.26.pdf', 'chunk_id': 18, 'page_number': 8, 'start_index': 336}, None]], 'distances': [[19.027864456176758, 20.37603187561035, 20.440168380737305]]}
+[search_chunks] Raw results count: 2
+  Result: dist=19.027864456176758, src=Brochure_2026-27_7.7.26.pdf, p=3
+  Result: dist=20.37603187561035, src=Brochure_2026-27_7.7.26.pdf, p=8
+
+[search_chunks] Query: 'tell me about triple it owner', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['Brochure_2026-27_7.7.26.pdf_3_4', 'Brochure_2026-27_7.7.26.pdf_18_40', 'Brochure_2026-27_7.7.26.pdf_10_29']], 'embeddings': None, 'documents': [['2 | P a g e  \n  \n.  \n1.   About IIIT UNA  \nIIIT Una is an institute of national importance set up, funded, and managed by the Ministry of \nEducation, Govt. of India under the Public-Private Partnership model. The institute started its \noperation in the year 2014 and currently offering undergraduate programs in B.Tech CSE, B.Tech \nCSE (Data Science), B.Tech CSE (Cyber Security) and B.Tech ECE disciplines. The Institute also', '14 | P a g e  \n  \n  \n Labs in the IIIT Una Campus  \nIn the IIIT Una campus to assist our students with the technical requirements in an ever-changing \nworld we have multiple labs such as HPC, CPS, PCB, Biomedical Lab, Advanced VLSI Design Lab, \nProduct Development Lab, Electronics Workshop Lab.  \n  \n \n  \nAWaDH CPS lab  \n   \nIIIT Una is one of the partner institutes of Cyber Physical Systems Lab in collaboration with AWaDH,', 'coordinator.scp@iiitu.ac.in \n6.  \nAssociate Dean \n (Academic Affairs)  \nDr. Ankur Kumar   \n \nad.acad@iiitu.ac.in  \n7.  \nPlacements  \nDr. Naman Garg \nfic.cdc@iiitu.ac.in  \n8.  \nHead, School of Computing  \n(SoC)  \nDr. Mrityunjay Singh  \nhod.soc@iiitu.ac.in  \n9.  \nHead, School of Electronics  \n (SoE)  \nDr. Naman Garg \nhod.soe@iiitu.ac.in  \n \nThe Institute Invites Young Dynamic Brilliant Vibrant Enthusiastic Individuals to be part of its \nFamily!']], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'chunk_id': 4, 'source': 'Brochure_2026-27_7.7.26.pdf', 'start_index': 0, 'page_number': 3}, {'chunk_id': 40, 'source': 'Brochure_2026-27_7.7.26.pdf', 'page_number': 18, 'start_index': 0}, {'source': 'Brochure_2026-27_7.7.26.pdf', 'start_index': 845, 'page_number': 10, 'chunk_id': 29}]], 'distances': [[26.778690338134766, 28.292634963989258, 28.45943260192871]]}
+[search_chunks] Raw results count: 3
+  Result: dist=26.778690338134766, src=Brochure_2026-27_7.7.26.pdf, p=3
+  Result: dist=28.292634963989258, src=Brochure_2026-27_7.7.26.pdf, p=18
+  Result: dist=28.45943260192871, src=Brochure_2026-27_7.7.26.pdf, p=10
+
+[search_chunks] Query: 'tell me about triple it una', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['Brochure_2026-27_7.7.26.pdf_3_4', 'On-Device AI and Smart Reminders.pdf_10_15', 'On-Device AI and Smart Reminders.pdf_8_11']], 'embeddings': None, 'documents': [['2 | P a g e  \n  \n.  \n1.   About IIIT UNA  \nIIIT Una is an institute of national importance set up, funded, and managed by the Ministry of \nEducation, Govt. of India under the Public-Private Partnership model. The institute started its \noperation in the year 2014 and currently offering undergraduate programs in B.Tech CSE, B.Tech \nCSE (Data Science), B.Tech CSE (Cyber Security) and B.Tech ECE disciplines. The Institute also', None, None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'start_index': 0, 'source': 'Brochure_2026-27_7.7.26.pdf', 'chunk_id': 4, 'page_number': 3}, None, None]], 'distances': [[17.608388900756836, 21.324174880981445, 21.869873046875]]}
+[search_chunks] Raw results count: 1
+  Result: dist=17.608388900756836, src=Brochure_2026-27_7.7.26.pdf, p=3
+
+[search_chunks] Query: 'how to admission in triple it una through josha counselling', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['Brochure_2026-27_7.7.26.pdf_8_19', 'Brochure_2026-27_7.7.26.pdf_8_18', 'Brochure_2026-27_7.7.26.pdf_8_17']], 'embeddings': None, 'documents': [['laid-down admission procedure, and pay the prescribed fees.  \n  \n \nI.  \nAdmission through JoSAA/CSAB  \nAdmission to the B.Tech. programs of the Institute are carried out each year on the basis \nof performance of the students in the Joint Entrance Examination (JEE-Main) by \ncommon counselling through Joint Seat Allocation Authority (JoSAA) and Central Seat \nAllocation Board (CSAB). For admission to the B. Tech. Programs, the Institute shall', '#  Total credits for degree with Honors is 160+12 = 172.    \n  \n 7.  Faculty  \nThe faculty at IIIT Una are highly qualified and competent, delivering technical knowledge with \na strong emphasis on practical industrial exposure. For more information, please see the faculty \nprofiles available on Institute’s website.  \n 8.  Admissions  \nAdmission to any undergraduate B.Tech. requires that the applicant be eligible, go through the \nlaid-down admission procedure, and pay the prescribed fees.', '4 | P a g e  \n  \n7.   \nProject  \n15  \n8.   \nInternship*  \n10  \n9.   \nHonours/Online Optional Courses  \n12  \n \nTotal  \n160#  \n \n \n*  Only students eligible as per the Institute Internship policy are allowed to pursue internship.   \nOther students are expected to attend the VIII sem. course work as prescribed in the curriculum.    \n  \n #  Total credits for degree with Honors is 160+12 = 172.    \n  \n 7.  Faculty']], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'page_number': 8, 'chunk_id': 19, 'source': 'Brochure_2026-27_7.7.26.pdf', 'start_index': 769}, {'start_index': 336, 'source': 'Brochure_2026-27_7.7.26.pdf', 'chunk_id': 18, 'page_number': 8}, {'source': 'Brochure_2026-27_7.7.26.pdf', 'start_index': 0, 'page_number': 8, 'chunk_id': 17}]], 'distances': [[15.221488952636719, 15.71038818359375, 16.868335723876953]]}
+[search_chunks] Raw results count: 3
+  Result: dist=15.221488952636719, src=Brochure_2026-27_7.7.26.pdf, p=8
+  Result: dist=15.71038818359375, src=Brochure_2026-27_7.7.26.pdf, p=8
+  Result: dist=16.868335723876953, src=Brochure_2026-27_7.7.26.pdf, p=8
+
+[search_chunks] Query: 'how many clubs in triple i tuna', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['Brochure_2026-27_7.7.26.pdf_11_31', 'Brochure_2026-27_7.7.26.pdf_21_45', 'Brochure_2026-27_7.7.26.pdf_12_32']], 'embeddings': None, 'documents': [['7 | P a g e  \n  \nACTIVE  CLUBS', 'Suite  \n2450+ GST  \nFamily Suite  \n4000+ GST  \n3. Dayal Hotel    \n     Mobile No. +91-82868 00088  \n \nHotel \nName  \nCity  Validity  Meal Plan  \nRoom Type  \nSingle  \nDouble  \nDayal Hotel  Una  Till 31st \nof  \nMarch  \nCP (Breakfast + Wi-fi)  \nGOLD ROOM  \n2300  \n2500  \nMAP (Breakfast + One Major Meal + Wi-fi)  \nGOLD ROOM  \n2700  \n3300  \nCP (Breakfast + Wi-fi)  \nPLATINUM ROOM  \n2700  \n2900  \nMAP (Breakfast + One Major Meal + Wi-fi)  \nPLATINUM ROOM  \n3100  \n3700  \nCP (Breakfast + Wi-fi)', '8 | P a g e  \n  \nCLUB DETAILS  \nFORCE  \nCultivate a coding culture amongst students and encouraging growth across \nvarious domains.  \nEUNOIA  \nImmerses students in a rich tapestry of literary exploration, delving into \npoetry and drama  \nSARGAM  \nVibrant club dedicated to the world of music and dance  \nTravista  \nProvide travel experiences to create long lasting memories  \nECOVA  \nEnables members to actively participate in environmental activities   \nASTRAL']], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'page_number': 11, 'chunk_id': 31, 'start_index': 0, 'source': 'Brochure_2026-27_7.7.26.pdf'}, {'chunk_id': 45, 'start_index': 416, 'page_number': 21, 'source': 'Brochure_2026-27_7.7.26.pdf'}, {'source': 'Brochure_2026-27_7.7.26.pdf', 'chunk_id': 32, 'start_index': 0, 'page_number': 12}]], 'distances': [[28.113054275512695, 33.225337982177734, 34.86882781982422]]}
+[search_chunks] Raw results count: 3
+  Result: dist=28.113054275512695, src=Brochure_2026-27_7.7.26.pdf, p=11
+  Result: dist=33.225337982177734, src=Brochure_2026-27_7.7.26.pdf, p=21
+  Result: dist=34.86882781982422, src=Brochure_2026-27_7.7.26.pdf, p=12
+
+[search_chunks] Query: 'do you know elgar', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['On-Device AI and Smart Reminders.pdf_10_15', 'Brochure_2026-27_7.7.26.pdf_12_32', 'On-Device AI and Smart Reminders.pdf_9_12']], 'embeddings': None, 'documents': [[None, '8 | P a g e  \n  \nCLUB DETAILS  \nFORCE  \nCultivate a coding culture amongst students and encouraging growth across \nvarious domains.  \nEUNOIA  \nImmerses students in a rich tapestry of literary exploration, delving into \npoetry and drama  \nSARGAM  \nVibrant club dedicated to the world of music and dance  \nTravista  \nProvide travel experiences to create long lasting memories  \nECOVA  \nEnables members to actively participate in environmental activities   \nASTRAL', None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[None, {'page_number': 12, 'chunk_id': 32, 'start_index': 0, 'source': 'Brochure_2026-27_7.7.26.pdf'}, None]], 'distances': [[28.227054595947266, 28.260478973388672, 28.406082153320312]]}
+[search_chunks] Raw results count: 1
+  Result: dist=28.260478973388672, src=Brochure_2026-27_7.7.26.pdf, p=12
+
+[search_chunks] Query: 'yes', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['On-Device AI and Smart Reminders.pdf_10_15', 'On-Device AI and Smart Reminders.pdf_8_11', 'On-Device AI and Smart Reminders.pdf_9_12']], 'embeddings': None, 'documents': [[None, None, None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[None, None, None]], 'distances': [[24.285568237304688, 26.61787223815918, 26.663570404052734]]}
+[search_chunks] Raw results count: 0
+
+[search_chunks] Query: 'kya aap yalgar ke baare mein jaante ho tripoliti banane', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['On-Device AI and Smart Reminders.pdf_9_12', 'On-Device AI and Smart Reminders.pdf_7_8', 'On-Device AI and Smart Reminders.pdf_1_1']], 'embeddings': None, 'documents': [[None, None, None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[None, None, None]], 'distances': [[6.818782329559326, 7.330338478088379, 7.429165840148926]]}
+[search_chunks] Raw results count: 0
+
+[search_chunks] Query: 'do you know elgar in triple it you now', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['On-Device AI and Smart Reminders.pdf_10_15', 'On-Device AI and Smart Reminders.pdf_9_12', 'On-Device AI and Smart Reminders.pdf_8_11']], 'embeddings': None, 'documents': [[None, None, None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[None, None, None]], 'distances': [[23.41891860961914, 23.527402877807617, 24.225643157958984]]}
+[search_chunks] Raw results count: 0
+
+[search_chunks] Query: 'tell me about labs in triple it una', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['Brochure_2026-27_7.7.26.pdf_18_40', 'On-Device AI and Smart Reminders.pdf_5_6', 'Brochure_2026-27_7.7.26.pdf_3_4']], 'embeddings': None, 'documents': [['14 | P a g e  \n  \n  \n Labs in the IIIT Una Campus  \nIn the IIIT Una campus to assist our students with the technical requirements in an ever-changing \nworld we have multiple labs such as HPC, CPS, PCB, Biomedical Lab, Advanced VLSI Design Lab, \nProduct Development Lab, Electronics Workshop Lab.  \n  \n \n  \nAWaDH CPS lab  \n   \nIIIT Una is one of the partner institutes of Cyber Physical Systems Lab in collaboration with AWaDH,', None, '2 | P a g e  \n  \n.  \n1.   About IIIT UNA  \nIIIT Una is an institute of national importance set up, funded, and managed by the Ministry of \nEducation, Govt. of India under the Public-Private Partnership model. The institute started its \noperation in the year 2014 and currently offering undergraduate programs in B.Tech CSE, B.Tech \nCSE (Data Science), B.Tech CSE (Cyber Security) and B.Tech ECE disciplines. The Institute also']], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'source': 'Brochure_2026-27_7.7.26.pdf', 'chunk_id': 40, 'start_index': 0, 'page_number': 18}, None, {'chunk_id': 4, 'start_index': 0, 'source': 'Brochure_2026-27_7.7.26.pdf', 'page_number': 3}]], 'distances': [[14.844038963317871, 19.87387466430664, 19.998245239257812]]}
+[search_chunks] Raw results count: 2
+  Result: dist=14.844038963317871, src=Brochure_2026-27_7.7.26.pdf, p=18
+  Result: dist=19.998245239257812, src=Brochure_2026-27_7.7.26.pdf, p=3
+
+[search_chunks] Query: 'how to reach triple it una', k=3
+[search_chunks] Total IDs in collection: 49
+[search_chunks] Collection count: 49
+[search_chunks] Stored docs count: 49
+  Doc 0: B.TECH. ADMISSIONS 202 6 - 2 7   
+An Institute of National I...
+  Doc 1: 1 | P a g e  
+  
+  
+  
+  
+INSTITUTE VISION  
+  
+To build a v...
+  Doc 2: socially relevant problems.  
+  
+-   To inspire students to ...
+  Doc 3: 2 | P a g e  
+  
+.  
+1.   About IIIT UNA  
+IIIT Una is an in...
+  Doc 4: offers M.Tech programs in CSE with specialization in Cyber S...
+  Doc 5: curriculum has lab components, and a full semester is dedica...
+  Doc 6: dense deodar forests to snow-capped peaks and crystal-clear ...
+  Doc 7: eco-tourism.  
+The state is also making rapid strides in the...
+  Doc 8: unique confluence of natural beauty, cultural legacy, and pr...
+  Doc 9: 3 | P a g e  
+  
+  
+- The following seven blocks have been c...
+  Doc 10: 1 | P a g e...
+  Doc 11: 2 | P a g e  
+  
+- Institute also has different sports facil...
+  Doc 12: the campus.  
+- The institute already has SBI Bank Branch an...
+  Doc 13: Branch   
+Total 
+Students 
+Eligible/ 
+Interested/ 
+Appeared ...
+  Doc 14: 3 | P a g e  
+  
+ 
+ 
+ 5.  Courses Offered  
+The Institute of...
+  Doc 15: Senate and guidelines of AICTE, including NEP 2020. It consi...
+  Doc 16: 4 | P a g e  
+  
+7.   
+Project  
+15  
+8.   
+Internship*  
+10...
+  Doc 17: #  Total credits for degree with Honors is 160+12 = 172.    ...
+  Doc 18: laid-down admission procedure, and pay the prescribed fees. ...
+  Doc 19: follow the reservation policy as notified by MoE, Govt. of I...
+  Doc 20: by the MoE, Govt. of India from time to time.  
+  
+ 9.  Elig...
+  Doc 21: 5 | P a g e  
+  
+10. Fee Structure  
+ 
+I.  Institute Fee Str...
+  Doc 22: 2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-  
+2000/-...
+  Doc 23: Security  
+(Refundable)  
+5000/-  
+-  
+-  
+-  
+-  
+-  
+-  
+-...
+  Doc 24: Maintenance Charges  
+26250/-  
+26250/-  
+26250/-  
+26250/- ...
+  Doc 25: - The Institute facilitates students to avail Govt. of India...
+  Doc 26: 6 | P a g e  
+  
+- The Institute facilitates students to ava...
+  Doc 27: Mr. Rahul Rana 
++91 70186 01906 
+3.  
+              Chief Wa...
+  Doc 28: coordinator.scp@iiitu.ac.in 
+6.  
+Associate Dean 
+ (Academic...
+  Doc 29: Family!  
+It is sure that you will have a memorable joyful o...
+  Doc 30: 7 | P a g e  
+  
+ACTIVE  CLUBS...
+  Doc 31: 8 | P a g e  
+  
+CLUB DETAILS  
+FORCE  
+Cultivate a coding c...
+  Doc 32: Enables members to actively participate in environmental act...
+  Doc 33: PicXcel  
+It hones photography and videography skills for me...
+  Doc 34: 9 | P a g e  
+  
+Life at IIIT Una  
+ 
+ MERAKI (Technical Fe...
+  Doc 35: 10 | P a g e  
+  
+  
+  
+ MRIDANG (Cultural Fest):  
+- Celeb...
+  Doc 36: 11 | P a g e  
+  
+ YALGAAR (Sports Fest):  
+- Promotes athl...
+  Doc 37: 12 | P a g e...
+  Doc 38: 13 | P a g e  
+  
+  
+ Technical Workshops:  
+  
+- Keeping U...
+  Doc 39: 14 | P a g e  
+  
+  
+ Labs in the IIIT Una Campus  
+In the I...
+  Doc 40: IIT Ropar under the National Mission on Interdisciplinary Cy...
+  Doc 41: 15 | P a g e...
+  Doc 42: 16 | P a g e  
+  
+  
+Nearby Attractions...
+  Doc 43: 17 | P a g e  
+  
+  
+NEAR BY HOTEL QUOTATIONS FOR STAY   
+ 
+...
+  Doc 44: Suite  
+2450+ GST  
+Family Suite  
+4000+ GST  
+3. Dayal Hote...
+  Doc 45: PLATINUM ROOM  
+3100  
+3700  
+CP (Breakfast + Wi-fi)  
+DIAMO...
+  Doc 46: 18 | P a g e  
+  
+How to reach  
+ 
+I.  
+Via Air   
+The neare...
+  Doc 47: about train service from different cities towards Una, pleas...
+  Doc 48: :   
+350 Km  
+ 
+Chandigarh to Una  
+:   
+120 Km  
+  
+Bus Sta...
+[search_chunks] Query embedding computed, length: 384
+[search_chunks] Direct collection query returned: {'ids': [['Brochure_2026-27_7.7.26.pdf_3_4', 'Brochure_2026-27_7.7.26.pdf_8_18', 'On-Device AI and Smart Reminders.pdf_8_11']], 'embeddings': None, 'documents': [['2 | P a g e  \n  \n.  \n1.   About IIIT UNA  \nIIIT Una is an institute of national importance set up, funded, and managed by the Ministry of \nEducation, Govt. of India under the Public-Private Partnership model. The institute started its \noperation in the year 2014 and currently offering undergraduate programs in B.Tech CSE, B.Tech \nCSE (Data Science), B.Tech CSE (Cyber Security) and B.Tech ECE disciplines. The Institute also', '#  Total credits for degree with Honors is 160+12 = 172.    \n  \n 7.  Faculty  \nThe faculty at IIIT Una are highly qualified and competent, delivering technical knowledge with \na strong emphasis on practical industrial exposure. For more information, please see the faculty \nprofiles available on Institute’s website.  \n 8.  Admissions  \nAdmission to any undergraduate B.Tech. requires that the applicant be eligible, go through the \nlaid-down admission procedure, and pay the prescribed fees.', None]], 'uris': None, 'included': ['metadatas', 'documents', 'distances'], 'data': None, 'metadatas': [[{'start_index': 0, 'page_number': 3, 'chunk_id': 4, 'source': 'Brochure_2026-27_7.7.26.pdf'}, {'chunk_id': 18, 'source': 'Brochure_2026-27_7.7.26.pdf', 'page_number': 8, 'start_index': 336}, None]], 'distances': [[23.526758193969727, 24.592601776123047, 25.311260223388672]]}
+[search_chunks] Raw results count: 2
+  Result: dist=23.526758193969727, src=Brochure_2026-27_7.7.26.pdf, p=3
+  Result: dist=24.592601776123047, src=Brochure_2026-27_7.7.26.pdf, p=8
