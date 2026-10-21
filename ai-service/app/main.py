@@ -48,6 +48,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # --------------------------------------------------
@@ -168,7 +169,9 @@ async def ingest_document(
                 detail="PDF must be 15 MB or smaller.",
             )
 
+        print(f"[INGEST] Processing '{file.filename}' ({len(pdf_bytes)} bytes)...")
         result = extract_text_from_pdf(pdf_bytes)
+        print(f"[INGEST] Extracted {result['total_pages']} page(s) from '{file.filename}'")
 
         if not result["pages"] or not any(
             page["text"] for page in result["pages"]
@@ -182,10 +185,12 @@ async def ingest_document(
             )
 
         chunks = split_pages_into_chunks(result["pages"])
+        print(f"[INGEST] Generated {len(chunks)} text chunks. Indexing into Chroma vector store...")
 
         stored_count = await asyncio.to_thread(
             store_chunks, chunks, file.filename, clear_previous
         )
+        print(f"[INGEST] Done! Stored {stored_count} chunks for '{file.filename}'.")
 
         all_docs = list_documents()
 

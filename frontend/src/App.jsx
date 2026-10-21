@@ -7,6 +7,9 @@ import {
   clearCampusDocuments,
   transcribeAudio,
   speakText,
+  getApiBaseUrl,
+  setCustomApiBaseUrl,
+  checkBackendHealth,
 } from "./services/api";
 import { AudioRecorder } from "./services/audioRecorder";
 import ChatMessage from "./components/ChatMessage";
@@ -25,6 +28,13 @@ export default function App() {
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Backend Connection & Settings Modal
+  const [backendStatus, setBackendStatus] = useState({ online: false, checking: true, url: "" });
+  const [showServerModal, setShowServerModal] = useState(false);
+  const [serverUrlInput, setServerUrlInput] = useState("");
+  const [testResult, setTestResult] = useState(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   // Mobile Drawer State (Phase 6 - Mobile-friendly UI)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -52,7 +62,7 @@ export default function App() {
   // Initial load: Fetch documents and init audio recorder
   useEffect(() => {
     audioRecorderRef.current = new AudioRecorder();
-    loadDocuments();
+    verifyBackendAndLoad();
 
     return () => {
       stopAudioPlayback();
@@ -64,6 +74,46 @@ export default function App() {
       }
     };
   }, []);
+
+  async function verifyBackendAndLoad() {
+    setBackendStatus({ online: false, checking: true, url: getApiBaseUrl() });
+    const health = await checkBackendHealth();
+    setBackendStatus({ online: health.online, checking: false, url: health.url, error: health.error });
+    if (health.online) {
+      loadDocuments();
+    }
+  }
+
+  async function testBackendUrl() {
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const urlToTest = (serverUrlInput || getApiBaseUrl()).trim().replace(/\/+$/, "");
+      const res = await fetch(`${urlToTest}/api/health`, { method: "GET", signal: AbortSignal.timeout(15000) });
+      if (res.ok) {
+        setTestResult({ success: true, message: "Connected successfully! Backend is online." });
+      } else {
+        setTestResult({ success: false, message: `Server replied with status ${res.status}.` });
+      }
+    } catch (err) {
+      setTestResult({
+        success: false,
+        message: err.name === "TimeoutError" 
+          ? "Request timed out. If Render is waking up from sleep, wait ~45s." 
+          : `Connection error: ${err.message}`,
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  }
+
+  function saveBackendUrl() {
+    if (serverUrlInput && serverUrlInput.trim()) {
+      setCustomApiBaseUrl(serverUrlInput.trim());
+    }
+    setShowServerModal(false);
+    verifyBackendAndLoad();
+  }
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -353,33 +403,41 @@ export default function App() {
     setErrorMessage("");
 
     let successCount = 0;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file.name.toLowerCase().endsWith(".pdf")) {
-        setErrorMessage(`'${file.name}' is not a PDF. Only PDF files are supported.`);
-        continue;
-      }
-      if (file.size > 15 * 1024 * 1024) {
-        setErrorMessage(`'${file.name}' exceeds the 15 MB size limit.`);
-        continue;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.name.toLowerCase().endsWith(".pdf")) {
+          setErrorMessage(`'${file.name}' is not a PDF. Only PDF files are supported.`);
+          continue;
+        }
+        if (file.size > 15 * 1024 * 1024) {
+          setErrorMessage(`'${file.name}' exceeds the 15 MB size limit.`);
+          continue;
+        }
+
+        setUploadStatus(
+          `Indexing [${i + 1}/${files.length}]: ${file.name}... (Extracting text & computing embeddings)`
+        );
+
+        try {
+          await uploadCampusDocument(file, false);
+          successCount++;
+        } catch (err) {
+          console.error("Upload error:", err);
+          setErrorMessage(`Failed to upload '${file.name}': ${err.message}`);
+        }
       }
 
-      setUploadStatus(`Indexing [${i + 1}/${files.length}]: ${file.name}...`);
-      try {
-        await uploadCampusDocument(file, false);
-        successCount++;
-      } catch (err) {
-        setErrorMessage(`Failed to upload ${file.name}: ${err.message}`);
+      // Refresh active documents list
+      await loadDocuments();
+    } finally {
+      setUploading(false);
+      if (successCount > 0) {
+        setUploadStatus(`✓ Successfully indexed ${successCount} notice(s)!`);
+        setTimeout(() => setUploadStatus(""), 4500);
+      } else {
+        setUploadStatus("");
       }
-    }
-
-    // Refresh active documents list
-    await loadDocuments();
-    setUploading(false);
-
-    if (successCount > 0) {
-      setUploadStatus(`✓ Successfully indexed ${successCount} notice(s)!`);
-      setTimeout(() => setUploadStatus(""), 4500);
     }
   }
 
@@ -624,6 +682,35 @@ export default function App() {
           </div>
 
           <div className="topbar-actions">
+            {/* Backend Server Status & Config */}
+            <button
+              type="button"
+              className="backend-status-btn"
+              onClick={() => {
+                setServerUrlInput(getApiBaseUrl());
+                setTestResult(null);
+                setShowServerModal(true);
+              }}
+              title="Click to view or change the backend Render URL"
+            >
+              <span
+                className={`status-dot ${
+                  backendStatus.checking
+                    ? "yellow"
+                    : backendStatus.online
+                    ? "green"
+                    : "red"
+                }`}
+              />
+              <span>
+                {backendStatus.checking
+                  ? "Connecting..."
+                  : backendStatus.online
+                  ? "Backend Live"
+                  : "Connect Backend"}
+              </span>
+            </button>
+
             <button
               type="button"
               className={`voice-toggle-topbar ${autoVoiceResponse ? "enabled" : ""}`}
@@ -861,6 +948,65 @@ export default function App() {
           CampusSathi answers are verified against uploaded notices. Always cross-check critical dates with original college circulars.
         </footer>
       </main>
+
+      {/* Backend Server Settings Modal */}
+      {showServerModal && (
+        <div className="server-modal-backdrop" onClick={() => setShowServerModal(false)}>
+          <div className="server-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="server-modal-header">
+              <h3>⚙️ Backend Server Settings</h3>
+              <button
+                type="button"
+                className="server-modal-close"
+                onClick={() => setShowServerModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="server-modal-body">
+              <p>
+                Connect your Vercel frontend directly to your deployed <strong>Render</strong> AI backend.
+              </p>
+              <div className="server-input-group">
+                <label htmlFor="backend-url-input">Render Backend URL:</label>
+                <input
+                  id="backend-url-input"
+                  type="url"
+                  className="server-input"
+                  value={serverUrlInput}
+                  onChange={(e) => setServerUrlInput(e.target.value)}
+                  placeholder="https://your-service.onrender.com"
+                />
+              </div>
+
+              {testResult && (
+                <div className={`server-test-result ${testResult.success ? "success" : "error"}`}>
+                  <span>{testResult.success ? "✓" : "⚠️"}</span>
+                  <span>{testResult.message}</span>
+                </div>
+              )}
+            </div>
+            <div className="server-modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={testBackendUrl}
+                disabled={isTesting}
+              >
+                {isTesting ? "Testing Ping..." : "Test Connection"}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={saveBackendUrl}
+              >
+                Save & Connect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
