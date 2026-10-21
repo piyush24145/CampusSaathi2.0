@@ -1,8 +1,11 @@
 from pathlib import Path
 import re
 import os
+import threading
 from typing import Optional, List, Dict, Any
 
+import chromadb
+from chromadb.config import Settings
 from langchain_community.embeddings import HuggingFaceEmbeddings
 # pyrefly: ignore [missing-import]
 from langchain_chroma import Chroma
@@ -12,53 +15,79 @@ from langchain_core.documents import Document
 BASE_DIR = Path(__file__).resolve().parents[1]
 DB_DIR = BASE_DIR / "chroma_db"
 
+_store_lock = threading.Lock()
 _embedding_model = None
 _vector_store = None
+_chroma_client = None
+
+
+def get_chroma_client():
+    global _chroma_client
+    if _chroma_client is None:
+        _chroma_client = chromadb.PersistentClient(
+            path=str(DB_DIR),
+            settings=Settings(
+                anonymized_telemetry=False,
+                allow_reset=True,
+                is_persistent=True,
+            ),
+        )
+    return _chroma_client
 
 
 def get_vector_store():
     global _embedding_model, _vector_store
 
-    if _vector_store is None:
-        model_name = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-        _embedding_model = HuggingFaceEmbeddings(
-            model_name=model_name
-        )
+    if _vector_store is not None:
+        return _vector_store
 
-        _vector_store = Chroma(
-            collection_name="college_documents",
-            embedding_function=_embedding_model,
-            persist_directory=str(DB_DIR),
-        )
+    with _store_lock:
+        if _vector_store is not None:
+            return _vector_store
 
-    return _vector_store
+        try:
+            if _embedding_model is None:
+                model_name = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+                _embedding_model = HuggingFaceEmbeddings(model_name=model_name)
+
+            client = get_chroma_client()
+            _vector_store = Chroma(
+                client=client,
+                collection_name="college_documents",
+                embedding_function=_embedding_model,
+            )
+            return _vector_store
+        except Exception as e:
+            print(f"[VECTOR_STORE] Error creating Chroma vector store: {e}")
+            _vector_store = None
+            raise
 
 
 def list_documents() -> List[Dict[str, Any]]:
     """Return summary of all currently indexed documents in the vector store."""
-    vs = get_vector_store()
     try:
+        vs = get_vector_store()
         data = vs.get(include=["metadatas"])
         metadatas = data.get("metadatas", []) if data else []
-        
+
         doc_map: Dict[str, Dict[str, Any]] = {}
         for meta in metadatas:
             if not meta:
                 continue
             source = meta.get("source", "Unknown_Document")
             page_num = meta.get("page_number", 1)
-            
+
             if source not in doc_map:
                 doc_map[source] = {
                     "filename": source,
                     "total_chunks": 0,
                     "pages": set(),
                 }
-            
+
             doc_map[source]["total_chunks"] += 1
             if page_num:
                 doc_map[source]["pages"].add(int(page_num))
-        
+
         docs = []
         for filename, info in doc_map.items():
             sorted_pages = sorted(list(info["pages"]))
@@ -68,7 +97,7 @@ def list_documents() -> List[Dict[str, Any]]:
                 "pages": sorted_pages,
                 "total_pages": len(sorted_pages) if sorted_pages else 1,
             })
-        
+
         docs.sort(key=lambda d: d["filename"])
         return docs
     except Exception as e:
@@ -78,8 +107,8 @@ def list_documents() -> List[Dict[str, Any]]:
 
 def delete_document(filename: str) -> Dict[str, Any]:
     """Delete all chunks belonging to a specific filename."""
-    vs = get_vector_store()
     try:
+        vs = get_vector_store()
         data = vs.get(where={"source": filename})
         ids = data.get("ids", []) if data else []
         if ids:
@@ -94,8 +123,8 @@ def delete_document(filename: str) -> Dict[str, Any]:
 
 def clear_vector_store() -> int:
     """Clear all stored documents from ChromaDB."""
-    vs = get_vector_store()
     try:
+        vs = get_vector_store()
         data = vs.get()
         ids = data.get("ids", []) if data else []
         if ids:
@@ -105,6 +134,7 @@ def clear_vector_store() -> int:
     except Exception as e:
         print(f"[VECTOR_STORE] Note during clearing IDs: {e}")
         try:
+            vs = get_vector_store()
             vs.reset_collection()
             print("[VECTOR_STORE] Reset collection successfully.")
         except Exception as err:
@@ -122,7 +152,6 @@ def store_chunks(chunks: list, filename: str, clear_previous: bool = False) -> i
     if clear_previous:
         clear_vector_store()
     else:
-        # Replace only existing chunks for this specific document
         delete_document(filename)
 
     documents = []
@@ -152,7 +181,8 @@ def store_chunks(chunks: list, filename: str, clear_previous: bool = False) -> i
         ids.append(f"{clean_prefix}_p{page_num}_c{chunk_id}")
 
     if documents:
-        get_vector_store().add_documents(
+        vs = get_vector_store()
+        vs.add_documents(
             documents=documents,
             ids=ids,
         )
@@ -166,8 +196,8 @@ def search_chunks(question: str, k: int = 4, filter_source: Optional[str] = None
     Find relevant chunks across all stored documents or filtered to a single document.
     Returns rich source metadata including snippet and relevance score.
     """
-    vs = get_vector_store()
     try:
+        vs = get_vector_store()
         data = vs.get()
         ids = data.get("ids", []) if data else []
         if not ids:
@@ -182,9 +212,8 @@ def search_chunks(question: str, k: int = 4, filter_source: Optional[str] = None
         matches = []
         for document, distance in results:
             dist = float(distance)
-            # Normalize L2 distance to an approximate 0.0 - 1.0 relevance score
             relevance = max(0.0, min(1.0, round(1.0 / (1.0 + dist), 3)))
-            
+
             matches.append({
                 "text": document.page_content,
                 "source": document.metadata.get("source", "Unknown Document"),
@@ -193,7 +222,7 @@ def search_chunks(question: str, k: int = 4, filter_source: Optional[str] = None
                 "distance": dist,
                 "relevance_score": relevance,
             })
-            
+
         return matches
     except Exception as e:
         print(f"[VECTOR_STORE] Search error: {e}")

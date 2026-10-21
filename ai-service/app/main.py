@@ -215,12 +215,21 @@ async def ingest_document(
 @app.get("/api/documents")
 def get_all_documents():
     """Retrieve all currently indexed college documents with chunk counts and pages."""
-    docs = list_documents()
-    return {
-        "success": True,
-        "count": len(docs),
-        "documents": docs,
-    }
+    try:
+        docs = list_documents()
+        return {
+            "success": True,
+            "count": len(docs),
+            "documents": docs,
+        }
+    except Exception as e:
+        print(f"[API ERROR] /api/documents error: {e}")
+        return {
+            "success": True,
+            "count": 0,
+            "documents": [],
+            "error": str(e),
+        }
 
 
 @app.delete("/api/documents/{filename}")
