@@ -35,6 +35,12 @@ def get_chroma_client():
     return _chroma_client
 
 
+def get_collection():
+    """Direct fast access to Chroma collection for metadata queries without loading embedding model."""
+    client = get_chroma_client()
+    return client.get_or_create_collection(name="college_documents")
+
+
 def get_vector_store():
     global _embedding_model, _vector_store
 
@@ -64,10 +70,10 @@ def get_vector_store():
 
 
 def list_documents() -> List[Dict[str, Any]]:
-    """Return summary of all currently indexed documents in the vector store."""
+    """Return summary of all currently indexed documents in the vector store instantly without embedding overhead."""
     try:
-        vs = get_vector_store()
-        data = vs.get(include=["metadatas"])
+        coll = get_collection()
+        data = coll.get(include=["metadatas"])
         metadatas = data.get("metadatas", []) if data else []
 
         doc_map: Dict[str, Dict[str, Any]] = {}
@@ -106,13 +112,13 @@ def list_documents() -> List[Dict[str, Any]]:
 
 
 def delete_document(filename: str) -> Dict[str, Any]:
-    """Delete all chunks belonging to a specific filename."""
+    """Delete all chunks belonging to a specific filename instantly via direct collection."""
     try:
-        vs = get_vector_store()
-        data = vs.get(where={"source": filename})
+        coll = get_collection()
+        data = coll.get(where={"source": filename})
         ids = data.get("ids", []) if data else []
         if ids:
-            vs.delete(ids=ids)
+            coll.delete(ids=ids)
             print(f"[VECTOR_STORE] Deleted {len(ids)} chunks for document: '{filename}'")
             return {"success": True, "deleted_chunks": len(ids), "filename": filename}
         return {"success": True, "deleted_chunks": 0, "filename": filename}
@@ -124,22 +130,17 @@ def delete_document(filename: str) -> Dict[str, Any]:
 def clear_vector_store() -> int:
     """Clear all stored documents from ChromaDB."""
     try:
-        vs = get_vector_store()
-        data = vs.get()
+        coll = get_collection()
+        data = coll.get()
         ids = data.get("ids", []) if data else []
         if ids:
-            vs.delete(ids=ids)
+            coll.delete(ids=ids)
             print(f"[VECTOR_STORE] Cleared {len(ids)} chunks from ChromaDB.")
             return len(ids)
+        return 0
     except Exception as e:
         print(f"[VECTOR_STORE] Note during clearing IDs: {e}")
-        try:
-            vs = get_vector_store()
-            vs.reset_collection()
-            print("[VECTOR_STORE] Reset collection successfully.")
-        except Exception as err:
-            print(f"[VECTOR_STORE] Note during reset collection: {err}")
-    return 0
+        return 0
 
 
 def store_chunks(chunks: list, filename: str, clear_previous: bool = False) -> int:
@@ -197,12 +198,12 @@ def search_chunks(question: str, k: int = 4, filter_source: Optional[str] = None
     Returns rich source metadata including snippet and relevance score.
     """
     try:
-        vs = get_vector_store()
-        data = vs.get()
-        ids = data.get("ids", []) if data else []
+        coll = get_collection()
+        ids = coll.get().get("ids", [])
         if not ids:
             return []
 
+        vs = get_vector_store()
         search_kwargs = {}
         if filter_source and filter_source.strip():
             search_kwargs["filter"] = {"source": filter_source.strip()}
