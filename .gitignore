@@ -1,9 +1,42 @@
+# Dependencies
 node_modules/
 .venv/
-__pycache__/
-.env
-*.pyc
-chroma_db/
-uploads/
-dist/
 .conda/
+env/
+venv/
+
+# Environment Variables & Secrets
+.env
+.env*.local
+*.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ChromaDB & Vector Store
+chroma_db/
+**/chroma_db/
+*.chroma
+
+# Build Artifacts
+dist/
+build/
+.cache/
+
+# Uploads & Temp Audio/Logs
+uploads/
+**/uploads/
+*.log
+*.wav
+*.mp3
+*.webm
+*.ogg
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
