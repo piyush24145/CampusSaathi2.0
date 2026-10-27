@@ -4,14 +4,6 @@ import struct
 import asyncio
 from contextlib import asynccontextmanager
 
-# Constrain parallel thread pools so background workers do not multiply memory arena allocations on low-memory servers
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["ONNXRUNTIME_THREAD_COUNT"] = "1"
-
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -29,7 +21,6 @@ from app.vector_store import (
     clear_vector_store,
     list_documents,
     delete_document,
-    trim_memory,
 )
 from app.document_processor import (
     extract_text_from_pdf,
@@ -38,7 +29,6 @@ from app.document_processor import (
 
 # Load environment variables from ai-service/.env
 load_dotenv()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -174,22 +164,19 @@ async def ingest_document(
                 detail="The uploaded PDF is empty.",
             )
 
-        if len(pdf_bytes) > 10 * 1024 * 1024:
+        if len(pdf_bytes) > 15 * 1024 * 1024:
             raise HTTPException(
                 status_code=413,
-                detail="PDF must be 10 MB or smaller.",
+                detail="PDF must be 15 MB or smaller.",
             )
 
         print(f"[INGEST] Processing '{file.filename}' ({len(pdf_bytes)} bytes)...")
         result = extract_text_from_pdf(pdf_bytes)
-        del pdf_bytes  # Immediately free the raw PDF bytes from RAM
-        trim_memory()
+        print(f"[INGEST] Extracted {result['total_pages']} page(s) from '{file.filename}'")
 
-        total_pages = result.get("total_pages", 0)
-        pages = result.get("pages", [])
-        print(f"[INGEST] Extracted {len(pages)} usable page(s) from '{file.filename}' (total {total_pages})")
-
-        if not pages or not any(page["text"] for page in pages):
+        if not result["pages"] or not any(
+            page["text"] for page in result["pages"]
+        ):
             raise HTTPException(
                 status_code=422,
                 detail=(
@@ -198,18 +185,12 @@ async def ingest_document(
                 ),
             )
 
-        chunks = split_pages_into_chunks(pages)
-        del pages
-        del result
-        trim_memory()
-
+        chunks = split_pages_into_chunks(result["pages"])
         print(f"[INGEST] Generated {len(chunks)} text chunks. Indexing into Chroma vector store...")
 
         stored_count = await asyncio.to_thread(
             store_chunks, chunks, file.filename, clear_previous
         )
-        del chunks
-        trim_memory()
         print(f"[INGEST] Done! Stored {stored_count} chunks for '{file.filename}'.")
 
         all_docs = list_documents()
@@ -218,8 +199,8 @@ async def ingest_document(
             "success": True,
             "message": f"Successfully indexed '{file.filename}' ({stored_count} chunks).",
             "filename": file.filename,
-            "total_pages": total_pages,
-            "total_chunks": stored_count,
+            "total_pages": result["total_pages"],
+            "total_chunks": len(chunks),
             "stored_chunks": stored_count,
             "all_documents": all_docs,
         }
@@ -235,8 +216,6 @@ async def ingest_document(
 
     finally:
         await file.close()
-        trim_memory()
-
 
 
 @app.get("/api/documents")
@@ -513,10 +492,6 @@ def ask_question(request: AskRequest):
                 "network connection and API configuration."
             ),
         )
-
-    finally:
-        trim_memory()
-
 
 # --------------------------------------------------
 # 8. Gnani Speech-to-Text (Prisma)
