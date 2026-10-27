@@ -1,6 +1,8 @@
 from pathlib import Path
 import re
 import os
+import gc
+import ctypes
 import threading
 from typing import Optional, List, Dict, Any
 
@@ -17,6 +19,15 @@ _chroma_client = None
 _embedding_fn = None
 
 
+def trim_memory():
+    """Trigger Python garbage collection and tell Linux kernel to free unmapped heap pages immediately."""
+    gc.collect()
+    try:
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except Exception:
+        pass
+
+
 def get_chroma_client():
     global _chroma_client
     if _chroma_client is None:
@@ -26,6 +37,8 @@ def get_chroma_client():
                 anonymized_telemetry=False,
                 allow_reset=True,
                 is_persistent=True,
+                chroma_memory_limit_bytes=80 * 1024 * 1024,
+                chroma_segment_cache_policy="LRU",
             ),
         )
     return _chroma_client
@@ -163,16 +176,18 @@ def store_chunks(chunks: list, filename: str, clear_previous: bool = False) -> i
 
     if documents:
         coll = get_collection()
-        # Chroma handles embedding via DefaultEmbeddingFunction (ONNX) in small batches
-        batch_size = 64
+        # Chroma handles embedding via DefaultEmbeddingFunction (ONNX) in small batches of 16
+        batch_size = 16
         for i in range(0, len(documents), batch_size):
             coll.add(
                 ids=ids[i:i + batch_size],
                 documents=documents[i:i + batch_size],
                 metadatas=metadatas[i:i + batch_size],
             )
+            trim_memory()
         print(f"[VECTOR_STORE] Stored {len(documents)} chunks for '{filename}'.")
 
+    trim_memory()
     return len(documents)
 
 
@@ -219,8 +234,11 @@ def search_chunks(question: str, k: int = 4, filter_source: Optional[str] = None
                     "relevance_score": relevance,
                 })
 
+        trim_memory()
         return matches
     except Exception as e:
         print(f"[VECTOR_STORE] Search error: {e}")
+        trim_memory()
         return []
+
 
