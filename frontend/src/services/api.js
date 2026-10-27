@@ -126,11 +126,11 @@ export async function uploadCampusDocument(file, clearPrevious = false) {
     formData.append("file", file);
 
     const endpoint = `/api/documents/ingest?clear_previous=${clearPrevious ? "true" : "false"}`;
-    // 120s timeout to allow large PDF parsing + embeddings generation + Render free-tier wake up
+    // 180s timeout to allow cold Render backend to spin up, extract PDF, and compute embeddings
     const response = await apiFetch(endpoint, {
         method: "POST",
         body: formData,
-    }, 120000);
+    }, 180000);
 
     const data = await response.json();
 

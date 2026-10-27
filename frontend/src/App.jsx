@@ -424,6 +424,7 @@ export default function App() {
           successCount++;
         } catch (err) {
           console.error("Upload error:", err);
+          setUploadStatus("");
           setErrorMessage(`Failed to upload '${file.name}': ${err.message}`);
         }
       }
