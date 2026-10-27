@@ -24,7 +24,7 @@ CampusSathi AI is an intelligent college campus assistant featuring Retrieval-Au
    - **Root Directory**: `ai-service`
    - **Build Command**:
      ```bash
-     pip install -r requirements.txt && python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+     pip install -r requirements.txt && python -c "import chromadb.utils.embedding_functions as ef; ef.DefaultEmbeddingFunction()(['warmup'])"
      ```
    - **Start Command**:
      ```bash

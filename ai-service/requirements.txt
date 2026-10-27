@@ -3,10 +3,7 @@ uvicorn[standard]
 python-dotenv
 python-multipart
 pymupdf
-langchain
-langchain-community
 langchain-text-splitters
-langchain-chroma
-sentence-transformers
+chromadb
 httpx
 openrouter
