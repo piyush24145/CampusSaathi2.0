@@ -68,6 +68,7 @@ def home():
 # --------------------------------------------------
 
 @app.get("/health")
+@app.get("/api/health")
 def health():
     return {
         "success": True,

@@ -682,35 +682,6 @@ export default function App() {
           </div>
 
           <div className="topbar-actions">
-            {/* Backend Server Status & Config */}
-            <button
-              type="button"
-              className="backend-status-btn"
-              onClick={() => {
-                setServerUrlInput(getApiBaseUrl());
-                setTestResult(null);
-                setShowServerModal(true);
-              }}
-              title="Click to view or change the backend Render URL"
-            >
-              <span
-                className={`status-dot ${
-                  backendStatus.checking
-                    ? "yellow"
-                    : backendStatus.online
-                    ? "green"
-                    : "red"
-                }`}
-              />
-              <span>
-                {backendStatus.checking
-                  ? "Connecting..."
-                  : backendStatus.online
-                  ? "Backend Live"
-                  : "Connect Backend"}
-              </span>
-            </button>
-
             <button
               type="button"
               className={`voice-toggle-topbar ${autoVoiceResponse ? "enabled" : ""}`}
@@ -948,64 +919,6 @@ export default function App() {
           CampusSathi answers are verified against uploaded notices. Always cross-check critical dates with original college circulars.
         </footer>
       </main>
-
-      {/* Backend Server Settings Modal */}
-      {showServerModal && (
-        <div className="server-modal-backdrop" onClick={() => setShowServerModal(false)}>
-          <div className="server-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="server-modal-header">
-              <h3>⚙️ Backend Server Settings</h3>
-              <button
-                type="button"
-                className="server-modal-close"
-                onClick={() => setShowServerModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="server-modal-body">
-              <p>
-                Connect your Vercel frontend directly to your deployed <strong>Render</strong> AI backend.
-              </p>
-              <div className="server-input-group">
-                <label htmlFor="backend-url-input">Render Backend URL:</label>
-                <input
-                  id="backend-url-input"
-                  type="url"
-                  className="server-input"
-                  value={serverUrlInput}
-                  onChange={(e) => setServerUrlInput(e.target.value)}
-                  placeholder="https://your-service.onrender.com"
-                />
-              </div>
-
-              {testResult && (
-                <div className={`server-test-result ${testResult.success ? "success" : "error"}`}>
-                  <span>{testResult.success ? "✓" : "⚠️"}</span>
-                  <span>{testResult.message}</span>
-                </div>
-              )}
-            </div>
-            <div className="server-modal-footer">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={testBackendUrl}
-                disabled={isTesting}
-              >
-                {isTesting ? "Testing Ping..." : "Test Connection"}
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={saveBackendUrl}
-              >
-                Save & Connect
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
