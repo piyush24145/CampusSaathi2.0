@@ -1,0 +1,12 @@
+frontend
+backend
+node_modules
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+ai-service/.venv
+ai-service/chroma_db
+ai-service/debug_last_recorded.wav
