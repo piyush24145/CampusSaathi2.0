@@ -32,13 +32,19 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Fast boot so Render/Cloud health check passes immediately
+    # Fast non-blocking boot so Google Cloud Run / health checks pass immediately
+    try:
+        from app.seeder import seed_sample_notices_if_empty
+        # Seed sample notices in background thread if database is empty
+        asyncio.create_task(asyncio.to_thread(seed_sample_notices_if_empty))
+    except Exception as e:
+        print(f"[STARTUP WARNING] Could not schedule background seeder: {e}")
     yield
 
 app = FastAPI(
     title="CampusSathi AI Service",
-    description="Voice and RAG assistant for college students",
-    version="1.0.0",
+    description="Voice and RAG assistant for college students on Google Cloud Run",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -59,6 +65,7 @@ app.add_middleware(
 def home():
     return {
         "success": True,
+        "service": "CampusSathi AI Service",
         "message": "Welcome to CampusSathi AI Service!",
     }
 
@@ -70,10 +77,17 @@ def home():
 @app.get("/health")
 @app.get("/api/health")
 def health():
+    try:
+        docs = list_documents()
+        doc_count = len(docs)
+    except Exception:
+        doc_count = 0
+
     return {
         "success": True,
-        "service": "AI Service",
+        "service": "CampusSathi AI Service",
         "status": "running",
+        "documents_indexed": doc_count,
     }
 
 
@@ -147,7 +161,7 @@ async def extract_document(file: UploadFile = File(...)):
 @app.post("/api/documents/ingest")
 async def ingest_document(
     file: UploadFile = File(...),
-    clear_previous: bool = False,
+    clear_previous: bool = True,
 ):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
@@ -186,12 +200,13 @@ async def ingest_document(
             )
 
         chunks = split_pages_into_chunks(result["pages"])
-        print(f"[INGEST] Generated {len(chunks)} text chunks. Indexing into Chroma vector store...")
+        print(f"[INGEST] Generated {len(chunks)} text chunks. Replacing prior notice with new document...")
 
+        # Always clear previous documents so only the currently uploaded PDF is active
         stored_count = await asyncio.to_thread(
-            store_chunks, chunks, file.filename, clear_previous
+            store_chunks, chunks, file.filename, clear_previous=True
         )
-        print(f"[INGEST] Done! Stored {stored_count} chunks for '{file.filename}'.")
+        print(f"[INGEST] Done! Stored {stored_count} chunks for active notice '{file.filename}'.")
 
         all_docs = list_documents()
 
@@ -314,7 +329,7 @@ class AskRequest(BaseModel):
 # --------------------------------------------------
 
 @app.post("/api/ask")
-def ask_question(request: AskRequest):
+async def ask_question(request: AskRequest):
     question = request.question.strip()
 
     if not question:
@@ -336,7 +351,7 @@ def ask_question(request: AskRequest):
             status_code=500,
             detail=(
                 "OPENROUTER_API_KEY is missing. "
-                "Check your ai-service/.env file."
+                "Check your environment variables in Google Cloud Run."
             ),
         )
 
@@ -357,7 +372,8 @@ def ask_question(request: AskRequest):
 
     try:
         # Step 1: Retrieve relevant chunks across documents (or filtered by document)
-        matches = search_chunks(
+        matches = await asyncio.to_thread(
+            search_chunks,
             question,
             k=request.k,
             filter_source=request.filter_source,
@@ -406,23 +422,22 @@ def ask_question(request: AskRequest):
             "5. TONE & LANGUAGE: Clear, student-friendly, and concise. Respond in the language used by the user (Hindi, Hinglish, or English)."
         )
 
-        with OpenRouter(api_key=api_key) as client:
-            response = client.chat.send(
-                model="openrouter/free",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {
-                        "role": "user",
-                        "content": (
-                            f"Question: {question}\n\n"
-                            f"Document Context Excerpts:\n{context}"
-                        ),
-                    },
-                ],
-                stream=False,
-            )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": (
+                    f"Question: {question}\n\n"
+                    f"Document Context Excerpts:\n{context}"
+                ),
+            },
+        ]
 
-        answer = response.choices[0].message.content
+        # Call OpenRouter with multi-model fallback & rate-limit backoff
+        from app.llm import generate_chat_completion
+        answer, model_used = await asyncio.to_thread(
+            generate_chat_completion, messages, api_key
+        )
 
         if not answer:
             raise RuntimeError("The LLM returned an empty answer.")
@@ -475,6 +490,7 @@ def ask_question(request: AskRequest):
             "success": True,
             "question": question,
             "answer": answer,
+            "model_used": model_used,
             "is_answerable": not is_unanswerable,
             "sources": sources,
             "documents_available": doc_names_list,
@@ -550,6 +566,26 @@ async def transcribe_audio(
                     )
                 },
             )
+
+            # Retry on 429 Too Many Requests (rate limit or concurrency limit)
+            if response.status_code == 429:
+                print("[STT DEBUG] Received 429 from Gnani STT, retrying after 700ms backoff...")
+                await asyncio.sleep(0.7)
+                response = await client.post(
+                    "https://api.vachana.ai/stt/v3",
+                    headers={"X-API-Key-ID": api_key},
+                    data={
+                        "language_code": target_lang,
+                        "format": "transcribe",
+                    },
+                    files={
+                        "audio_file": (
+                            "speech.wav",
+                            audio_bytes,
+                            "audio/wav",
+                        )
+                    },
+                )
 
         print(f"[STT DEBUG] Gnani STT Status: {response.status_code}")
         print(f"[STT DEBUG] Gnani STT Raw Body: {response.text}")

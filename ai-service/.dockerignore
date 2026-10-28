@@ -1,8 +1,12 @@
+.git
+.venv
+venv
 __pycache__
 *.pyc
 *.pyo
 *.pyd
-.venv
+*.log
+*.wav
 .env
 chroma_db
 debug_last_recorded.wav

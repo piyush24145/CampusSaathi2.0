@@ -99,7 +99,7 @@ export default function App() {
       setTestResult({
         success: false,
         message: err.name === "TimeoutError" 
-          ? "Request timed out. If Render is waking up from sleep, wait ~45s." 
+          ? "Request timed out. Please check if your backend server is active." 
           : `Connection error: ${err.message}`,
       });
     } finally {
@@ -392,83 +392,64 @@ export default function App() {
   }
 
   // --------------------------------------------------
-  // Document Uploads (Phase 5 - Multi-Document Support)
+  // Document Upload (Single active notice, clears prior document and chat history)
   // --------------------------------------------------
   async function handleFileUpload(event) {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
     if (files.length === 0) return;
 
+    const file = files[0];
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setErrorMessage(`'${file.name}' is not a PDF. Only PDF files are supported.`);
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setErrorMessage(`'${file.name}' exceeds the 15 MB size limit.`);
+      return;
+    }
+
     setUploading(true);
     setErrorMessage("");
+    setUploadStatus(`Indexing '${file.name}'... (Clearing prior history)`);
 
-    let successCount = 0;
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (!file.name.toLowerCase().endsWith(".pdf")) {
-          setErrorMessage(`'${file.name}' is not a PDF. Only PDF files are supported.`);
-          continue;
-        }
-        if (file.size > 15 * 1024 * 1024) {
-          setErrorMessage(`'${file.name}' exceeds the 15 MB size limit.`);
-          continue;
-        }
+      // 1. Upload new PDF with clearPrevious = true (wiping old document and chunks)
+      await uploadCampusDocument(file, true);
 
-        setUploadStatus(
-          `Indexing [${i + 1}/${files.length}]: ${file.name}... (Extracting text & computing embeddings)`
-        );
+      // 2. Clear old chat conversation history so questions start completely fresh
+      setMessages([]);
+      setSelectedDocFilter(null);
+      stopAudioPlayback();
 
-        try {
-          await uploadCampusDocument(file, false);
-          successCount++;
-        } catch (err) {
-          console.error("Upload error:", err);
-          setUploadStatus("");
-          setErrorMessage(`Failed to upload '${file.name}': ${err.message}`);
-        }
-      }
-
-      // Refresh active documents list
+      // 3. Reload active document
       await loadDocuments();
+
+      setUploadStatus(`✓ Active document: '${file.name}'. Ready for your questions!`);
+      setTimeout(() => setUploadStatus(""), 4500);
+    } catch (err) {
+      console.error("Upload error:", err);
+      setErrorMessage(`Failed to upload '${file.name}': ${err.message}`);
+      setUploadStatus("");
     } finally {
       setUploading(false);
-      if (successCount > 0) {
-        setUploadStatus(`✓ Successfully indexed ${successCount} notice(s)!`);
-        setTimeout(() => setUploadStatus(""), 4500);
-      } else {
-        setUploadStatus("");
-      }
-    }
-  }
-
-  async function handleDeleteDocument(filename) {
-    if (!window.confirm(`Are you sure you want to remove '${filename}'?`)) return;
-    try {
-      await deleteCampusDocument(filename);
-      await loadDocuments();
-      if (selectedDocFilter === filename) {
-        setSelectedDocFilter(null);
-      }
-      setUploadStatus(`✓ Removed '${filename}'.`);
-      setTimeout(() => setUploadStatus(""), 3500);
-    } catch (err) {
-      setErrorMessage(`Could not remove document: ${err.message}`);
     }
   }
 
   async function handleClearAllDocuments() {
     if (documents.length === 0) return;
-    if (!window.confirm("Remove ALL uploaded notices from the system?")) return;
+    if (!window.confirm("Remove active document and clear conversation history?")) return;
 
     try {
       await clearCampusDocuments();
       await loadDocuments();
+      setMessages([]);
       setSelectedDocFilter(null);
-      setUploadStatus("✓ All documents cleared.");
+      stopAudioPlayback();
+      setUploadStatus("✓ Active document removed.");
       setTimeout(() => setUploadStatus(""), 3500);
     } catch (err) {
-      setErrorMessage(`Failed to clear documents: ${err.message}`);
+      setErrorMessage(`Failed to clear document: ${err.message}`);
     }
   }
 
@@ -515,92 +496,53 @@ export default function App() {
           <span>+</span> New Conversation
         </button>
 
-        {/* Document Management Section (Phase 5) */}
+        {/* Document Management Section */}
         <div className="sidebar-doc-section">
           <div className="doc-section-title">
-            <span>COLLEGE NOTICES ({documents.length})</span>
+            <span>ACTIVE NOTICE</span>
             {documents.length > 0 && (
               <button
                 type="button"
                 className="clear-all-link"
                 onClick={handleClearAllDocuments}
-                title="Remove all uploaded notices"
+                title="Remove active notice"
               >
-                Clear all
+                Clear
               </button>
             )}
           </div>
 
-          {/* Quick Filter: All vs Specific Notice */}
-          {documents.length > 1 && (
-            <div className="filter-pill-container">
-              <button
-                type="button"
-                className={`filter-pill ${selectedDocFilter === null ? "active" : ""}`}
-                onClick={() => setSelectedDocFilter(null)}
-              >
-                All Notices
-              </button>
-              {documents.map((d) => (
-                <button
-                  key={d.filename}
-                  type="button"
-                  className={`filter-pill ${selectedDocFilter === d.filename ? "active" : ""}`}
-                  onClick={() =>
-                    setSelectedDocFilter(
-                      selectedDocFilter === d.filename ? null : d.filename
-                    )
-                  }
-                  title={`Focus questions exclusively on ${d.filename}`}
-                >
-                  {d.filename.replace(".pdf", "").slice(0, 16)}...
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Document list */}
           <div className="sidebar-doc-list">
             {documents.length === 0 ? (
               <div className="no-docs-hint">
                 <span className="no-docs-icon">📄</span>
-                <p>No college notices uploaded yet.</p>
-                <small>Upload multiple exam, hostel, or library notices to ask questions!</small>
+                <p>No notice loaded.</p>
+                <small>Upload a PDF notice to extract details and ask questions.</small>
               </div>
             ) : (
-              documents.map((doc) => (
-                <div
-                  className={`doc-card-item ${
-                    selectedDocFilter === doc.filename ? "selected" : ""
-                  }`}
-                  key={doc.filename}
-                >
-                  <div className="doc-card-left">
-                    <span className="doc-pdf-emoji">📄</span>
-                    <div className="doc-card-details">
-                      <strong className="doc-card-name" title={doc.filename}>
-                        {doc.filename}
-                      </strong>
-                      <span className="doc-card-meta">
-                        {doc.total_pages} {doc.total_pages === 1 ? "page" : "pages"} · {doc.total_chunks} chunks
-                      </span>
-                    </div>
+              <div className="doc-card-item selected">
+                <div className="doc-card-left">
+                  <span className="doc-pdf-emoji">📄</span>
+                  <div className="doc-card-details">
+                    <strong className="doc-card-name" title={documents[0].filename}>
+                      {documents[0].filename}
+                    </strong>
+                    <span className="doc-card-meta">
+                      {documents[0].total_pages} {documents[0].total_pages === 1 ? "page" : "pages"} · {documents[0].total_chunks} chunks
+                    </span>
                   </div>
-
-                  <button
-                    type="button"
-                    className="delete-doc-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteDocument(doc.filename);
-                    }}
-                    title={`Delete ${doc.filename}`}
-                    aria-label={`Delete ${doc.filename}`}
-                  >
-                    🗑️
-                  </button>
                 </div>
-              ))
+
+                <button
+                  type="button"
+                  className="delete-doc-btn"
+                  onClick={handleClearAllDocuments}
+                  title="Remove document"
+                  aria-label="Remove document"
+                >
+                  🗑️
+                </button>
+              </div>
             )}
           </div>
 
@@ -609,18 +551,17 @@ export default function App() {
             {uploading ? (
               <>
                 <span className="spinner-small" />
-                <span>Uploading...</span>
+                <span>Processing PDF...</span>
               </>
             ) : (
               <>
-                <span>↑ Upload Notices (PDF)</span>
+                <span>{documents.length > 0 ? "↻ Replace with New PDF" : "↑ Upload Notice (PDF)"}</span>
               </>
             )}
             <input
               ref={fileInputRef}
               type="file"
               accept=".pdf,application/pdf"
-              multiple
               onChange={handleFileUpload}
               disabled={uploading}
               hidden
@@ -673,16 +614,32 @@ export default function App() {
               <div className="title-row">
                 <h1>CampusSathi AI</h1>
                 <span className="doc-count-badge">
-                  📚 {documents.length} {documents.length === 1 ? "Notice" : "Notices"}
+                  {documents.length > 0 ? `📄 ${documents[0].filename}` : "📄 No Notice Loaded"}
                 </span>
               </div>
               <p className="topbar-subtitle">
-                Ask about college notices via text or voice with source citations
+                Ask about the college notice via text or voice with source citations
               </p>
             </div>
           </div>
 
           <div className="topbar-actions">
+            <button
+              type="button"
+              className={`server-status-pill ${backendStatus.online ? "online" : "offline"}`}
+              onClick={() => {
+                setServerUrlInput(backendStatus.url || getApiBaseUrl());
+                setTestResult(null);
+                setShowServerModal(true);
+              }}
+              title="Server Connection Status"
+            >
+              <span className={`status-indicator-dot ${backendStatus.online ? "online" : backendStatus.checking ? "checking" : "offline"}`} />
+              <span className="server-status-text">
+                {backendStatus.checking ? "Checking..." : backendStatus.online ? "Server Online" : "Connect Server"}
+              </span>
+            </button>
+
             <button
               type="button"
               className={`voice-toggle-topbar ${autoVoiceResponse ? "enabled" : ""}`}
@@ -856,11 +813,7 @@ export default function App() {
                   ? "Listening to your voice... Speak your question..."
                   : documents.length === 0
                   ? "Upload a college notice (PDF) to start asking questions..."
-                  : `Ask a question across ${
-                      selectedDocFilter
-                        ? selectedDocFilter
-                        : `${documents.length} uploaded notices`
-                    }...`
+                  : `Ask anything about ${documents[0].filename}...`
               }
               rows={2}
               disabled={loading || isTranscribing}
@@ -884,10 +837,7 @@ export default function App() {
             <div className="composer-hint">
               {documents.length > 0 ? (
                 <span>
-                  Searching:{" "}
-                  <strong>
-                    {selectedDocFilter || `${documents.length} notices`}
-                  </strong>
+                  Active Notice: <strong>{documents[0].filename}</strong>
                 </span>
               ) : (
                 <span>No notice uploaded yet</span>
@@ -920,6 +870,65 @@ export default function App() {
           CampusSathi answers are verified against uploaded notices. Always cross-check critical dates with original college circulars.
         </footer>
       </main>
+
+      {/* Server Settings Modal */}
+      {showServerModal && (
+        <div className="server-modal-backdrop" onClick={() => setShowServerModal(false)}>
+          <div className="server-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="server-modal-header">
+              <h3>⚙️ Server Settings</h3>
+              <button
+                type="button"
+                className="server-modal-close"
+                onClick={() => setShowServerModal(false)}
+                aria-label="Close settings"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="server-modal-body">
+              <p>
+                Configure the backend API server URL for CampusSathi.
+              </p>
+              <div className="server-input-group">
+                <label htmlFor="cloud-run-url">Server API URL:</label>
+                <input
+                  id="cloud-run-url"
+                  type="url"
+                  className="server-input"
+                  placeholder="http://localhost:8000 or https://your-server.app"
+                  value={serverUrlInput}
+                  onChange={(e) => setServerUrlInput(e.target.value)}
+                />
+              </div>
+
+              {testResult && (
+                <div className={`server-test-result ${testResult.success ? "success" : "error"}`}>
+                  <span>{testResult.success ? "✅" : "❌"}</span>
+                  <span>{testResult.message}</span>
+                </div>
+              )}
+            </div>
+            <div className="server-modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={testBackendUrl}
+                disabled={isTesting}
+              >
+                {isTesting ? "Testing..." : "⚡ Test Connection"}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={saveBackendUrl}
+              >
+                💾 Save & Connect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,11 +2,17 @@ frontend
 backend
 node_modules
 .git
+.github
+.vscode
+.agents
 .venv
+venv
 __pycache__
 *.pyc
 *.pyo
 *.pyd
+*.log
+*.wav
 ai-service/.venv
 ai-service/chroma_db
 ai-service/debug_last_recorded.wav

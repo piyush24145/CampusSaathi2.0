@@ -38,18 +38,17 @@ export function getApiBaseUrl() {
         }
     }
 
-    // Default to the user's Render backend URL if known, or empty
-    return "https://campussaathi2-0.onrender.com";
+    return "";
 }
 
 /**
- * Universal fetch wrapper with configurable timeout (default 90s to handle Render free cold-starts)
+ * Universal fetch wrapper with configurable timeout
  */
-async function apiFetch(endpoint, options = {}, timeoutMs = 90000) {
+async function apiFetch(endpoint, options = {}, timeoutMs = 60000) {
     const baseUrl = getApiBaseUrl();
     if (!baseUrl) {
         throw new Error(
-            "Backend URL is missing. Please configure your Render backend URL in the settings."
+            "Backend URL is missing. Please click 'Server Settings' (⚙️) at the top right and enter your server URL."
         );
     }
 
@@ -68,12 +67,12 @@ async function apiFetch(endpoint, options = {}, timeoutMs = 90000) {
         clearTimeout(timeoutTimer);
         if (error.name === "AbortError") {
             throw new Error(
-                "Request timed out. If your Render backend was sleeping (free tier spins down after inactivity), it takes ~45s to wake up. Please wait a moment and try again!"
+                "Request timed out. Please verify that your backend server is active and accessible."
             );
         }
         if (error.message && (error.message.includes("Failed to fetch") || error.message.includes("NetworkError"))) {
             throw new Error(
-                `Cannot reach backend at ${baseUrl}. The server might be waking up on Render or the URL is incorrect.`
+                `Cannot reach backend at ${baseUrl}. Please check your network connection and server status.`
             );
         }
         throw error;
@@ -121,16 +120,16 @@ export async function askCampusSathi(question, filterSource = null) {
     return data;
 }
 
-export async function uploadCampusDocument(file, clearPrevious = false) {
+export async function uploadCampusDocument(file, clearPrevious = true) {
     const formData = new FormData();
     formData.append("file", file);
 
     const endpoint = `/api/documents/ingest?clear_previous=${clearPrevious ? "true" : "false"}`;
-    // 180s timeout to allow cold Render backend to spin up, extract PDF, and compute embeddings
+    // Timeout to allow PDF text extraction and embedding computation
     const response = await apiFetch(endpoint, {
         method: "POST",
         body: formData,
-    }, 180000);
+    }, 120000);
 
     const data = await response.json();
 

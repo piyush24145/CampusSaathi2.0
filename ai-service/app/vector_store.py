@@ -4,12 +4,22 @@ import os
 import threading
 from typing import Optional, List, Dict, Any
 
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
 import chromadb
 from chromadb.config import Settings
-from langchain_community.embeddings import HuggingFaceEmbeddings
-# pyrefly: ignore [missing-import]
-from langchain_chroma import Chroma
-from langchain_core.documents import Document
+
+try:
+    from langchain_community.embeddings import HuggingFaceEmbeddings  # type: ignore
+except ImportError:
+    try:
+        from langchain_huggingface import HuggingFaceEmbeddings  # type: ignore
+    except ImportError:
+        HuggingFaceEmbeddings = None  # type: ignore
+
+from langchain_chroma import Chroma  # type: ignore
+from langchain_core.documents import Document  # type: ignore
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -199,7 +209,8 @@ def search_chunks(question: str, k: int = 4, filter_source: Optional[str] = None
     """
     try:
         coll = get_collection()
-        ids = coll.get().get("ids", [])
+        data = coll.get()
+        ids = data.get("ids", []) if data else []
         if not ids:
             return []
 

@@ -1,0 +1,32 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: campussathi-ai
+  labels:
+    cloud.googleapis.com/location: asia-south1
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '5'
+        run.googleapis.com/cpu-throttling: 'true'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+        - image: gcr.io/PROJECT_ID/campussathi-ai:latest
+          ports:
+            - name: http1
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: '1000m'
+              memory: '2Gi'
+          env:
+            - name: OPENROUTER_API_KEY
+              value: 'your_openrouter_api_key_here'
+            - name: OPENROUTER_MODEL
+              value: 'meta-llama/llama-3.3-70b-instruct:free'
+            - name: GNANI_API_KEY
+              value: ''
