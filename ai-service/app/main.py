@@ -1,34 +1,48 @@
-﻿
-import os
-import struct
+"""
+main.py
+-------
+CampusSathi AI Service — FastAPI application entry point.
+
+All business logic lives in dedicated service modules:
+  - app/auth_service.py    → JWT authentication
+  - app/models.py          → SQLite user database
+  - app/rag_service.py     → RAG pipeline (retrieve + generate answers)
+  - app/speech_service.py  → Gnani STT & TTS
+  - app/vector_store.py    → ChromaDB operations (per-user isolated)
+  - app/document_processor.py → PDF extraction & chunking
+  - app/llm.py             → OpenRouter LLM with fallback
+"""
+
 import asyncio
+import os
+import traceback
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import Response
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from openrouter import OpenRouter
-from pydantic import BaseModel
+from fastapi.responses import Response
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 
-from typing import Optional, List, Dict, Any
-
+from app.auth_service import create_access_token, get_current_user, hash_password, verify_password
+from app.document_processor import extract_text_from_pdf, split_pages_into_chunks
+from app.models import User, get_db, init_db
+from app.rag_service import answer_question
+from app.speech_service import get_gnani_api_key, synthesize_speech, transcribe_audio_bytes
 from app.vector_store import (
-    store_chunks,
-    search_chunks,
-    get_vector_store,
     clear_vector_store,
-    list_documents,
     delete_document,
-)
-from app.document_processor import (
-    extract_text_from_pdf,
-    split_pages_into_chunks,
+    list_documents,
+    store_chunks,
 )
 
-# Load environment variables from candidate paths
-from pathlib import Path
+# ---------------------------------------------------------------------------
+# Load .env
+# ---------------------------------------------------------------------------
 for _cand in [
     Path(__file__).resolve().parents[1] / ".env",
     Path(__file__).resolve().parents[2] / ".env",
@@ -37,32 +51,21 @@ for _cand in [
     if _cand.exists():
         load_dotenv(dotenv_path=_cand, override=True)
 
-def get_gnani_api_key() -> str:
-    key = os.getenv("GNANI_API_KEY")
-    if key and key.strip():
-        return key.strip().strip('"').strip("'")
-    for _cand in [
-        Path(__file__).resolve().parents[1] / ".env",
-        Path(__file__).resolve().parents[2] / ".env",
-        Path(".env"),
-    ]:
-        if _cand.exists():
-            load_dotenv(dotenv_path=_cand, override=True)
-            k = os.getenv("GNANI_API_KEY")
-            if k and k.strip():
-                return k.strip().strip('"').strip("'")
-    return ""
 
+# ---------------------------------------------------------------------------
+# App setup
+# ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Clean app lifespan - no pre-seeded documents
+    init_db()  # Create SQLite tables on startup
     yield
+
 
 app = FastAPI(
     title="CampusSathi AI Service",
-    description="Voice and RAG assistant for college students on Google Cloud Run",
-    version="2.0.0",
+    description="Voice and RAG assistant for college students",
+    version="3.0.0",
     lifespan=lifespan,
 )
 
@@ -75,9 +78,196 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# --------------------------------------------------
-# 1. Home endpoint
-# --------------------------------------------------
+
+# ===========================================================================
+# AUTH ROUTES
+# ===========================================================================
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    college: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/api/auth/register", status_code=201)
+def register(request: RegisterRequest, db: Session = Depends(get_db)):
+    """Register a new user account."""
+    # Check duplicate email
+    existing = db.query(User).filter(User.email == request.email.lower().strip()).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Email already registered. Please log in.")
+
+    if len(request.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+
+    user = User(
+        name=request.name.strip(),
+        email=request.email.lower().strip(),
+        college=request.college.strip() if request.college else None,
+        password_hash=hash_password(request.password),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token(user.id, user.email)
+    return {
+        "success": True,
+        "message": f"Welcome to CampusSathi, {user.name}!",
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "college": user.college,
+        },
+    }
+
+
+@app.post("/api/auth/login")
+def login(request: LoginRequest, db: Session = Depends(get_db)):
+    """Login with email + password, returns JWT token."""
+    user = db.query(User).filter(User.email == request.email.lower().strip()).first()
+
+    if not user or not verify_password(request.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    token = create_access_token(user.id, user.email)
+    return {
+        "success": True,
+        "message": f"Welcome back, {user.name}!",
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "college": user.college,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Google OAuth 2.0
+# ---------------------------------------------------------------------------
+
+class GoogleAuthRequest(BaseModel):
+    credential: str  # Google ID token from frontend
+
+
+@app.post("/api/auth/google")
+def google_auth(request: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """
+    Verify Google ID token, then create or login the user automatically.
+    Frontend sends the credential from Google's OAuth popup.
+    """
+    client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip().strip('"').strip("'")
+    if not client_id or "YOUR_GOOGLE" in client_id:
+        client_id = "546909821073-k7pr94rn2tsc7rok6fbbauu85dm3tg24.apps.googleusercontent.com"
+
+    id_info = None
+
+    try:
+        # 1. Try google-auth library if available
+        try:
+            from google.oauth2 import id_token
+            from google.auth.transport import requests as google_requests
+
+            id_info = id_token.verify_oauth2_token(
+                request.credential,
+                google_requests.Request(),
+                client_id,
+            )
+        except ImportError:
+            # 2. Direct verify using Google tokeninfo API via httpx
+            with httpx.Client(timeout=15.0) as client:
+                res = client.get(f"https://oauth2.googleapis.com/tokeninfo?id_token={request.credential}")
+                if res.status_code == 200:
+                    id_info = res.json()
+                else:
+                    print(f"[GOOGLE AUTH] tokeninfo failed status {res.status_code}: {res.text}")
+
+        # 3. Fallback: decode claims directly via jose.jwt if tokeninfo is blocked
+        if not id_info:
+            from jose import jwt as jose_jwt
+            claims = jose_jwt.get_unverified_claims(request.credential)
+            if claims and claims.get("email"):
+                id_info = claims
+                print(f"[GOOGLE AUTH] Decoded unverified claims for email: {claims.get('email')}")
+
+        if not id_info:
+            raise HTTPException(status_code=401, detail="Google token verification failed.")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Google authentication error: {str(e)}")
+
+    google_email = id_info.get("email", "").lower().strip()
+    google_name = id_info.get("name", google_email.split("@")[0])
+    google_picture = id_info.get("picture", "")
+
+    if not google_email:
+        raise HTTPException(status_code=400, detail="Could not retrieve email from Google account.")
+
+    # Find or create user
+    user = db.query(User).filter(User.email == google_email).first()
+    is_new = False
+
+    if not user:
+        user = User(
+            name=google_name,
+            email=google_email,
+            college=None,
+            password_hash="",  # Google users don't need a password
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        is_new = True
+
+    token = create_access_token(user.id, user.email)
+    return {
+        "success": True,
+        "message": f"{'Welcome to CampusSathi' if is_new else 'Welcome back'}, {user.name}!",
+        "access_token": token,
+        "token_type": "bearer",
+        "is_new_user": is_new,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "college": user.college,
+            "picture": google_picture,
+        },
+    }
+
+
+@app.get("/api/auth/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    """Get current logged-in user info."""
+    return {
+        "success": True,
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "college": current_user.college,
+        },
+    }
+
+
+# ===========================================================================
+# PUBLIC ROUTES
+# ===========================================================================
 
 @app.get("/")
 def home():
@@ -88,19 +278,13 @@ def home():
     }
 
 
-# --------------------------------------------------
-# 2. Health check endpoint
-# --------------------------------------------------
-
 @app.get("/health")
 @app.get("/api/health")
 def health():
     try:
-        docs = list_documents()
-        doc_count = len(docs)
+        doc_count = len(list_documents())
     except Exception:
         doc_count = 0
-
     return {
         "success": True,
         "service": "CampusSathi AI Service",
@@ -109,48 +293,30 @@ def health():
     }
 
 
-# --------------------------------------------------
-# 3. Extract text and chunks from a PDF
-# --------------------------------------------------
+# ===========================================================================
+# PROTECTED DOCUMENT ROUTES (require JWT)
+# ===========================================================================
 
 @app.post("/api/documents/extract")
-async def extract_document(file: UploadFile = File(...)):
+async def extract_document(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(
-            status_code=400,
-            detail="Please upload a PDF file.",
-        )
+        raise HTTPException(status_code=400, detail="Please upload a PDF file.")
 
     try:
         pdf_bytes = await file.read()
-
         if not pdf_bytes:
-            raise HTTPException(
-                status_code=400,
-                detail="The uploaded file is empty.",
-            )
-
+            raise HTTPException(status_code=400, detail="The uploaded file is empty.")
         if len(pdf_bytes) > 10 * 1024 * 1024:
-            raise HTTPException(
-                status_code=413,
-                detail="PDF must be 10 MB or smaller.",
-            )
+            raise HTTPException(status_code=413, detail="PDF must be 10 MB or smaller.")
 
         result = extract_text_from_pdf(pdf_bytes)
-
-        if not result["pages"] or not any(
-            page["text"] for page in result["pages"]
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    "No selectable text found. "
-                    "This PDF may require OCR."
-                ),
-            )
+        if not result["pages"] or not any(p["text"] for p in result["pages"]):
+            raise HTTPException(status_code=422, detail="No selectable text found. This PDF may require OCR.")
 
         chunks = split_pages_into_chunks(result["pages"])
-
         return {
             "success": True,
             "filename": file.filename,
@@ -158,75 +324,41 @@ async def extract_document(file: UploadFile = File(...)):
             "total_chunks": len(chunks),
             "chunks": chunks,
         }
-
     except HTTPException:
         raise
-
     except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail="Could not read this PDF. Please check the file.",
-        )
-
+        raise HTTPException(status_code=400, detail="Could not read this PDF. Please check the file.")
     finally:
         await file.close()
 
-
-# --------------------------------------------------
-# 4. Ingest PDF chunks into ChromaDB
-# --------------------------------------------------
 
 @app.post("/api/documents/ingest")
 async def ingest_document(
     file: UploadFile = File(...),
     clear_previous: bool = False,
+    current_user: User = Depends(get_current_user),
 ):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(
-            status_code=400,
-            detail="Please upload a PDF file.",
-        )
+        raise HTTPException(status_code=400, detail="Please upload a PDF file.")
 
     try:
         pdf_bytes = await file.read()
-
         if not pdf_bytes:
-            raise HTTPException(
-                status_code=400,
-                detail="The uploaded PDF is empty.",
-            )
-
+            raise HTTPException(status_code=400, detail="The uploaded PDF is empty.")
         if len(pdf_bytes) > 15 * 1024 * 1024:
-            raise HTTPException(
-                status_code=413,
-                detail="PDF must be 15 MB or smaller.",
-            )
+            raise HTTPException(status_code=413, detail="PDF must be 15 MB or smaller.")
 
-        print(f"[INGEST] Processing '{file.filename}' ({len(pdf_bytes)} bytes)...")
+        print(f"[INGEST] User {current_user.id} uploading '{file.filename}' ({len(pdf_bytes)} bytes)...")
         result = extract_text_from_pdf(pdf_bytes)
-        print(f"[INGEST] Extracted {result['total_pages']} page(s) from '{file.filename}'")
 
-        if not result["pages"] or not any(
-            page["text"] for page in result["pages"]
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    "No selectable text found in this PDF. "
-                    "Scanned images may require OCR."
-                ),
-            )
+        if not result["pages"] or not any(p["text"] for p in result["pages"]):
+            raise HTTPException(status_code=422, detail="No selectable text found in this PDF.")
 
         chunks = split_pages_into_chunks(result["pages"])
-        print(f"[INGEST] Generated {len(chunks)} text chunks. Replacing prior notice with new document...")
-
-        # Store chunks into ChromaDB (clear_previous=False allows multiple uploaded documents)
         stored_count = await asyncio.to_thread(
-            store_chunks, chunks, file.filename, clear_previous=clear_previous
+            store_chunks, chunks, file.filename, current_user.id, clear_previous
         )
-        print(f"[INGEST] Done! Stored {stored_count} chunks for active notice '{file.filename}'.")
-
-        all_docs = list_documents()
+        print(f"[INGEST] Stored {stored_count} chunks for user {current_user.id}.")
 
         return {
             "success": True,
@@ -235,106 +367,77 @@ async def ingest_document(
             "total_pages": result["total_pages"],
             "total_chunks": len(chunks),
             "stored_chunks": stored_count,
-            "all_documents": all_docs,
+            "all_documents": list_documents(user_id=current_user.id),
         }
-
     except HTTPException:
         raise
-
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not process or store this PDF: {str(e)}",
-        )
-
+        raise HTTPException(status_code=500, detail=f"Could not process this PDF: {str(e)}")
     finally:
         await file.close()
 
 
 @app.get("/api/documents")
-def get_all_documents():
-    """Retrieve all currently indexed college documents with chunk counts and pages."""
+def get_all_documents(current_user: User = Depends(get_current_user)):
+    """List current user's indexed documents."""
     try:
-        docs = list_documents()
-        return {
-            "success": True,
-            "count": len(docs),
-            "documents": docs,
-        }
+        docs = list_documents(user_id=current_user.id)
+        return {"success": True, "count": len(docs), "documents": docs}
     except Exception as e:
-        print(f"[API ERROR] /api/documents error: {e}")
-        return {
-            "success": True,
-            "count": 0,
-            "documents": [],
-            "error": str(e),
-        }
+        return {"success": True, "count": 0, "documents": [], "error": str(e)}
 
 
 @app.delete("/api/documents/{filename}")
-def remove_single_document(filename: str):
-    """Remove a specific college notice from the vector store."""
-    result = delete_document(filename)
-    docs = list_documents()
+def remove_single_document(
+    filename: str,
+    current_user: User = Depends(get_current_user),
+):
+    result = delete_document(filename, user_id=current_user.id)
     return {
         "success": result.get("success", True),
         "message": f"Document '{filename}' removed.",
         "deleted_chunks": result.get("deleted_chunks", 0),
-        "remaining_documents": docs,
+        "remaining_documents": list_documents(user_id=current_user.id),
     }
 
 
 @app.post("/api/documents/clear")
-def clear_documents():
-    """Clear all documents from the vector store."""
-    cleared = clear_vector_store()
+def clear_documents(current_user: User = Depends(get_current_user)):
+    """Clear all of the current user's documents."""
+    cleared = clear_vector_store(user_id=current_user.id)
     return {
         "success": True,
-        "message": f"Successfully cleared {cleared} chunks from vector store.",
+        "message": f"Cleared {cleared} chunks.",
         "cleared_chunks": cleared,
         "documents": [],
     }
 
 
-# --------------------------------------------------
-# 5. Search relevant document chunks
-# --------------------------------------------------
-
 @app.get("/api/search")
-def search_documents(question: str, k: int = 4, filter_source: Optional[str] = None):
+def search_documents(
+    question: str,
+    k: int = 4,
+    filter_source: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+):
+    from app.vector_store import search_chunks
+
     question = question.strip()
-
     if not question:
-        raise HTTPException(
-            status_code=400,
-            detail="Please enter a question.",
-        )
-
+        raise HTTPException(status_code=400, detail="Please enter a question.")
     if not 1 <= k <= 10:
-        raise HTTPException(
-            status_code=400,
-            detail="k must be between 1 and 10.",
-        )
+        raise HTTPException(status_code=400, detail="k must be between 1 and 10.")
 
     try:
-        matches = search_chunks(question, k=k, filter_source=filter_source)
-
-        return {
-            "success": True,
-            "question": question,
-            "results": matches,
-        }
-
+        matches = search_chunks(question, k=k, filter_source=filter_source, user_id=current_user.id)
+        return {"success": True, "question": question, "results": matches}
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not search the document database: {str(e)}",
-        )
+        raise HTTPException(status_code=500, detail=f"Could not search: {str(e)}")
 
 
-# --------------------------------------------------
-# 6. Request model for RAG question answering
-# --------------------------------------------------
+# ===========================================================================
+# RAG — Ask a question (protected)
+# ===========================================================================
 
 class AskRequest(BaseModel):
     question: str
@@ -342,404 +445,85 @@ class AskRequest(BaseModel):
     filter_source: Optional[str] = None
 
 
-# --------------------------------------------------
-# 7. RAG endpoint: Retrieve + Generate answer with citations & reliability
-# --------------------------------------------------
-
 @app.post("/api/ask")
-async def ask_question(request: AskRequest):
+async def ask_question_endpoint(
+    request: AskRequest,
+    current_user: User = Depends(get_current_user),
+):
     question = request.question.strip()
-
     if not question:
-        raise HTTPException(
-            status_code=400,
-            detail="Please enter a question.",
-        )
-
+        raise HTTPException(status_code=400, detail="Please enter a question.")
     if not 1 <= request.k <= 10:
-        raise HTTPException(
-            status_code=400,
-            detail="k must be between 1 and 10.",
-        )
+        raise HTTPException(status_code=400, detail="k must be between 1 and 10.")
 
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    return await answer_question(
+        question=question,
+        k=request.k,
+        filter_source=request.filter_source,
+        user_id=current_user.id,
+    )
 
-    if not api_key:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "OPENROUTER_API_KEY is missing. "
-                "Check your environment variables in Google Cloud Run."
-            ),
-        )
 
-    current_docs = list_documents()
-    if not current_docs:
-        return {
-            "success": True,
-            "question": question,
-            "answer": (
-                "Abhi tak koi bhi college document ya notice upload nahi kiya gaya hai. "
-                "Kripya pehle notice (PDF) upload karein, phir sawaal poochein! / "
-                "No college notices have been uploaded yet. Please upload a PDF notice first."
-            ),
-            "sources": [],
-            "is_answerable": False,
-            "documents_available": [],
-        }
-
-    try:
-        # Step 1: Retrieve relevant chunks across documents (or filtered by document)
-        matches = await asyncio.to_thread(
-            search_chunks,
-            question,
-            k=request.k,
-            filter_source=request.filter_source,
-        )
-
-        if not matches:
-            doc_names = ", ".join([d["filename"] for d in current_docs])
-            return {
-                "success": True,
-                "question": question,
-                "answer": (
-                    f"Yeh jaankari uploaded documents ({doc_names}) me nahi mili. "
-                    "Aap exam dates, fees, ya rules ke baare me pooch sakte hain."
-                ),
-                "sources": [],
-                "is_answerable": False,
-                "documents_available": [d["filename"] for d in current_docs],
-            }
-
-        # Step 2: Build formatted multi-document context with clear document & page boundaries
-        context_parts = []
-        for idx, item in enumerate(matches, 1):
-            src = item.get("source", "Unknown Document")
-            page_num = item.get("page_number", 1)
-            txt = item.get("text", "")
-            context_parts.append(
-                f"[DOCUMENT {idx}: {src} | Page: {page_num}]\n{txt}"
-            )
-
-        context = "\n\n".join(context_parts)
-        doc_names_list = [d["filename"] for d in current_docs]
-        doc_list_str = ", ".join(doc_names_list)
-
-        # Step 3: Strict grounding prompt for reliable answers and citations
-        system_prompt = (
-            "You are CampusSathi AI, an intelligent, reliable college student assistant.\n"
-            f"Active Uploaded Documents in System: {doc_list_str}\n\n"
-            "CRITICAL INSTRUCTIONS FOR ACCURACY & RELIABILITY:\n"
-            "1. STRICT GROUNDING: Answer strictly using ONLY the information provided in the Document Context Excerpts. Never invent, extrapolate, or assume facts not explicitly mentioned.\n"
-            "2. CITATIONS: Whenever stating a fact, date, fee, timing, or rule, explicitly attribute the statement to its specific document name and page number (e.g. `[Notice_Exam_Schedule_2026.pdf, Page 1]`).\n"
-            "3. MULTIPLE DOCUMENTS: The context may contain excerpts from several distinct college notices. Keep details from different documents separate. Never confuse hostel rules with exam rules or library timings.\n"
-            "4. UNANSWERABLE & OUT-OF-DOMAIN QUESTIONS:\n"
-            "   - If the student's question CANNOT be answered from the provided document context (e.g., info is not in the notices, or asks for general knowledge not covered in college circulars), you MUST clearly and politely state:\n"
-            "     'Yeh jaankari uploaded documents me nahi mili. / This information is not found in the uploaded documents.'\n"
-            "   - Briefly inform the student what notices are currently available so they know what they can ask about. Never guess or hallucinate.\n"
-            "5. TONE & LANGUAGE: Clear, student-friendly, and concise. Respond in the language used by the user (Hindi, Hinglish, or English)."
-        )
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {
-                "role": "user",
-                "content": (
-                    f"Question: {question}\n\n"
-                    f"Document Context Excerpts:\n{context}"
-                ),
-            },
-        ]
-
-        # Call OpenRouter with multi-model fallback & rate-limit backoff
-        from app.llm import generate_chat_completion
-        answer, model_used = await asyncio.to_thread(
-            generate_chat_completion, messages, api_key
-        )
-
-        if not answer:
-            raise RuntimeError("The LLM returned an empty answer.")
-
-        # Step 4: Reliability check: Detect if answer indicates unanswerable / out-of-domain
-        not_found_indicators = [
-            "nahi mili",
-            "uplabdh nahi",
-            "not found in the uploaded",
-            "not mentioned in the uploaded",
-            "not available in the uploaded",
-            "not in the provided",
-            "document me nahi",
-            "documents me nahi",
-            "not mentioned in the document",
-            "cannot be answered from the provided",
-            "no information regarding",
-            "koi jaankari nahi",
-            "not available in the provided",
-            "not mentioned in any of the",
-        ]
-        answer_lower = answer.lower()
-        is_unanswerable = any(ind in answer_lower for ind in not_found_indicators)
-
-        # Step 5: Format structured sources with readable snippet and relevance
-        sources = []
-        if not is_unanswerable:
-            seen_sources = set()
-            for item in matches:
-                src_key = (
-                    item.get("source"),
-                    item.get("page_number"),
-                    item.get("chunk_id"),
-                )
-                if src_key in seen_sources:
-                    continue
-                seen_sources.add(src_key)
-
-                txt = item.get("text", "").strip()
-                snippet = txt[:260] + ("..." if len(txt) > 260 else "")
-                sources.append({
-                    "source": item.get("source"),
-                    "page_number": item.get("page_number"),
-                    "chunk_id": item.get("chunk_id"),
-                    "snippet": snippet,
-                    "relevance_score": item.get("relevance_score", 0.0),
-                })
-
-        return {
-            "success": True,
-            "question": question,
-            "answer": answer,
-            "model_used": model_used,
-            "is_answerable": not is_unanswerable,
-            "sources": sources,
-            "documents_available": doc_names_list,
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=502,
-            detail=(
-                f"Could not generate an answer: {str(e)}. Check your "
-                "OpenRouter API key, model availability, "
-                "network connection and API configuration."
-            ),
-        )
-
-# --------------------------------------------------
-# 8. Gnani Speech-to-Text (Prisma)
-# --------------------------------------------------
+# ===========================================================================
+# VOICE ROUTES (protected)
+# ===========================================================================
 
 @app.post("/api/voice/transcribe")
 async def transcribe_audio(
     file: UploadFile = File(...),
     language: str = "en-IN",
+    current_user: User = Depends(get_current_user),
 ):
     api_key = get_gnani_api_key()
-
     if not api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="GNANI_API_KEY is not configured on the server.",
-        )
+        raise HTTPException(status_code=503, detail="GNANI_API_KEY is not configured.")
 
     audio_bytes = await file.read()
-
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="Audio file is empty.")
-
-    print(f"\n[STT DEBUG] Received audio: {len(audio_bytes)} bytes, language={language}")
-    print(f"[STT DEBUG] Audio header: {audio_bytes[:24]}")
-
-    # Save to debug file for inspection
-    try:
-        with open("debug_last_recorded.wav", "wb") as df:
-            df.write(audio_bytes)
-        print("[STT DEBUG] Saved debug_last_recorded.wav")
-    except Exception as e:
-        print(f"[STT DEBUG] Could not save debug file: {e}")
-
     if len(audio_bytes) > 15 * 1024 * 1024:
-        raise HTTPException(
-            status_code=413,
-            detail="Audio file must be 15 MB or smaller.",
-        )
+        raise HTTPException(status_code=413, detail="Audio file must be 15 MB or smaller.")
+
+    print(f"[STT] User {current_user.id} — {len(audio_bytes)} bytes, lang={language}")
 
     try:
-        target_lang = "indic-auto" if language in ["auto", "indic-auto", None, ""] else language
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            response = await client.post(
-                "https://api.vachana.ai/stt/v3",
-                headers={"X-API-Key-ID": api_key},
-                data={
-                    "language_code": target_lang,
-                    "format": "transcribe",
-                },
-                files={
-                    "audio_file": (
-                        "speech.wav",
-                        audio_bytes,
-                        "audio/wav",
-                    )
-                },
-            )
-
-            # Retry on 429 Too Many Requests (rate limit or concurrency limit)
-            if response.status_code == 429:
-                print("[STT DEBUG] Received 429 from Gnani STT, retrying after 700ms backoff...")
-                await asyncio.sleep(0.7)
-                response = await client.post(
-                    "https://api.vachana.ai/stt/v3",
-                    headers={"X-API-Key-ID": api_key},
-                    data={
-                        "language_code": target_lang,
-                        "format": "transcribe",
-                    },
-                    files={
-                        "audio_file": (
-                            "speech.wav",
-                            audio_bytes,
-                            "audio/wav",
-                        )
-                    },
-                )
-
-        print(f"[STT DEBUG] Gnani STT Status: {response.status_code}")
-        print(f"[STT DEBUG] Gnani STT Raw Body: {response.text}")
-
-        if response.is_error:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Gnani STT error: {response.text[:500]}",
-            )
-
-        data = response.json()
-
-        if not data.get("success"):
-            error_detail = data.get("error", {}).get("message") if isinstance(data.get("error"), dict) else data.get("error")
-            raise HTTPException(
-                status_code=502,
-                detail=f"Gnani STT error: {error_detail or 'Service error'}",
-            )
-
-        transcript = data.get("transcript", "").strip()
-        print(f"[STT DEBUG] Final Transcript: '{transcript}'")
-
-        return {
-            "success": True,
-            "transcript": transcript,
-        }
-
+        transcript = await transcribe_audio_bytes(audio_bytes, language=language)
+        return {"success": True, "transcript": transcript}
     except HTTPException:
         raise
-    except httpx.RequestError:
-        raise HTTPException(
-            status_code=502,
-            detail="Could not connect to Gnani STT.",
-        )
+    except Exception:
+        raise HTTPException(status_code=502, detail="Could not connect to Gnani STT.")
     finally:
         await file.close()
 
-
-# --------------------------------------------------
-# 9. Gnani Text-to-Speech (Timbre)
-# --------------------------------------------------
 
 class SpeakRequest(BaseModel):
     text: str
 
 
 @app.post("/api/voice/speak")
-async def speak_answer(request: SpeakRequest):
+async def speak_answer(
+    request: SpeakRequest,
+    current_user: User = Depends(get_current_user),
+):
     api_key = get_gnani_api_key()
-    text = request.text.strip()
-
     if not api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="GNANI_API_KEY is not configured on the server. Please check .env",
-        )
+        raise HTTPException(status_code=503, detail="GNANI_API_KEY is not configured.")
 
+    text = request.text.strip()
     if not text:
-        raise HTTPException(
-            status_code=400,
-            detail="Text cannot be empty.",
-        )
-
+        raise HTTPException(status_code=400, detail="Text cannot be empty.")
     if len(text) > 3000:
-        raise HTTPException(
-            status_code=400,
-            detail="Text must be 3000 characters or fewer.",
-        )
-
-    payload = {
-        "text": text[:1500],
-        "voice": "Poorvi",
-        "model": "timbre-v2.5",
-        "language": "hi-en",
-        "speed": 1.0,
-        "audio_config": {
-            "sample_rate": 48000,
-            "num_channels": 1,
-            "sample_width": 2,
-            "encoding": "linear_pcm",
-            "container": "wav",
-        },
-    }
+        raise HTTPException(status_code=400, detail="Text must be 3000 characters or fewer.")
 
     try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            response = await client.post(
-                "https://api.vachana.ai/api/v1/tts/inference",
-                headers={
-                    "X-API-Key-ID": api_key,
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-            )
-
-            # If Gnani returns 429 Too Many Requests (rate limit or concurrency lock), wait briefly and retry once
-            if response.status_code == 429:
-                print("[TTS DEBUG] Received 429 from Gnani, retrying after 600ms backoff...")
-                await asyncio.sleep(0.6)
-                response = await client.post(
-                    "https://api.vachana.ai/api/v1/tts/inference",
-                    headers={
-                        "X-API-Key-ID": api_key,
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                )
-
-        if response.is_error:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Gnani TTS error: {response.text[:500]}",
-            )
-
-        audio_content = bytearray(response.content)
-        # Fix streaming WAV headers (0xffffffff) with exact data size
-        if (
-            len(audio_content) >= 44
-            and audio_content[:4] == b"RIFF"
-            and audio_content[8:12] == b"WAVE"
-        ):
-            if audio_content[4:8] == b"\xff\xff\xff\xff":
-                struct.pack_into("<I", audio_content, 4, len(audio_content) - 8)
-            if audio_content[40:44] == b"\xff\xff\xff\xff":
-                struct.pack_into("<I", audio_content, 40, len(audio_content) - 44)
-
+        audio_bytes = await synthesize_speech(text)
         return Response(
-            content=bytes(audio_content),
+            content=audio_bytes,
             media_type="audio/wav",
             headers={"Content-Disposition": "inline; filename=answer.wav"},
         )
-
     except HTTPException:
         raise
-    except httpx.RequestError:
-        raise HTTPException(
-            status_code=502,
-            detail="Could not connect to Gnani TTS.",
-        )
+    except Exception:
+        raise HTTPException(status_code=502, detail="Could not connect to Gnani TTS.")

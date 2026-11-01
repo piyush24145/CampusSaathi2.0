@@ -10,3 +10,7 @@ langchain-chroma
 sentence-transformers
 httpx
 openrouter
+# Auth dependencies
+python-jose[cryptography]
+sqlalchemy
+google-auth

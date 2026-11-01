@@ -16,8 +16,7 @@ import VoiceRecorder from "./components/VoiceRecorder";
 import AudioPlayer from "./components/AudioPlayer";
 import "./App.css";
 
-export default function App() {
-  const [question, setQuestion] = useState("");
+export default function App({ currentUser, onLogout }) {  const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState(() => {
     try {
       const saved = localStorage.getItem("campusSathi_chatHistory");
@@ -690,6 +689,22 @@ export default function App() {
                 Auto-Read: {autoVoiceResponse ? "ON" : "OFF"}
               </span>
             </button>
+
+            {/* User info + Logout */}
+            <div className="topbar-user">
+              <span className="topbar-user-name">👤 {currentUser.name}</span>
+              <button
+                type="button"
+                className="logout-btn"
+                title="Log out"
+                onClick={() => {
+                  stopAudioPlayback();
+                  onLogout();
+                }}
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </header>
 

@@ -79,11 +79,16 @@ def get_vector_store():
             raise
 
 
-def list_documents() -> List[Dict[str, Any]]:
-    """Return summary of all currently indexed documents in the vector store instantly without embedding overhead."""
+def list_documents(user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Return summary of indexed documents. If user_id given, only that user's docs."""
     try:
         coll = get_collection()
-        data = coll.get(include=["metadatas"])
+        where_filter = {"user_id": str(user_id)} if user_id is not None else None
+        data = (
+            coll.get(include=["metadatas"], where=where_filter)
+            if where_filter
+            else coll.get(include=["metadatas"])
+        )
         metadatas = data.get("metadatas", []) if data else []
 
         doc_map: Dict[str, Dict[str, Any]] = {}
@@ -121,11 +126,14 @@ def list_documents() -> List[Dict[str, Any]]:
         return []
 
 
-def delete_document(filename: str) -> Dict[str, Any]:
-    """Delete all chunks belonging to a specific filename instantly via direct collection."""
+def delete_document(filename: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Delete all chunks belonging to a specific filename (scoped to user if user_id given)."""
     try:
         coll = get_collection()
-        data = coll.get(where={"source": filename})
+        where = {"source": filename}
+        if user_id is not None:
+            where = {"$and": [{"source": filename}, {"user_id": str(user_id)}]}
+        data = coll.get(where=where)
         ids = data.get("ids", []) if data else []
         if ids:
             coll.delete(ids=ids)
@@ -137,11 +145,12 @@ def delete_document(filename: str) -> Dict[str, Any]:
         return {"success": False, "deleted_chunks": 0, "filename": filename, "error": str(e)}
 
 
-def clear_vector_store() -> int:
-    """Clear all stored documents from ChromaDB."""
+def clear_vector_store(user_id: Optional[int] = None) -> int:
+    """Clear documents from ChromaDB. If user_id given, only clears that user's docs."""
     try:
         coll = get_collection()
-        data = coll.get()
+        where_filter = {"user_id": str(user_id)} if user_id is not None else None
+        data = coll.get(where=where_filter) if where_filter else coll.get()
         ids = data.get("ids", []) if data else []
         if ids:
             coll.delete(ids=ids)
@@ -153,21 +162,26 @@ def clear_vector_store() -> int:
         return 0
 
 
-def store_chunks(chunks: list, filename: str, clear_previous: bool = False) -> int:
+def store_chunks(
+    chunks: list,
+    filename: str,
+    user_id: Optional[int] = None,
+    clear_previous: bool = False,
+) -> int:
     """
-    Store PDF chunks with original source metadata.
-    If clear_previous is True, all existing docs are removed.
-    If clear_previous is False (default), only any prior version of THIS specific filename is replaced,
-    preserving all other uploaded documents!
+    Store PDF chunks with source + user_id metadata.
+    - clear_previous=True: removes ALL of this user's documents first.
+    - clear_previous=False (default): only replaces prior version of THIS filename for this user.
     """
     if clear_previous:
-        clear_vector_store()
+        clear_vector_store(user_id=user_id)
     else:
-        delete_document(filename)
+        delete_document(filename, user_id=user_id)
 
     documents = []
     ids = []
     clean_prefix = re.sub(r"[^a-zA-Z0-9_-]", "_", filename)
+    uid_suffix = f"_u{user_id}" if user_id is not None else ""
 
     for chunk in chunks:
         text = chunk["text"].strip()
@@ -177,48 +191,64 @@ def store_chunks(chunks: list, filename: str, clear_previous: bool = False) -> i
         page_num = int(chunk["page_number"])
         chunk_id = int(chunk["chunk_id"])
 
+        metadata = {
+            "source": filename,
+            "page_number": page_num,
+            "chunk_id": chunk_id,
+            "start_index": int(chunk.get("start_index", 0)),
+        }
+        if user_id is not None:
+            metadata["user_id"] = str(user_id)
+
         documents.append(
             Document(
                 page_content=text,
-                metadata={
-                    "source": filename,
-                    "page_number": page_num,
-                    "chunk_id": chunk_id,
-                    "start_index": int(chunk.get("start_index", 0)),
-                },
+                metadata=metadata,
             )
         )
 
-        ids.append(f"{clean_prefix}_p{page_num}_c{chunk_id}")
+        ids.append(f"{clean_prefix}{uid_suffix}_p{page_num}_c{chunk_id}")
 
     if documents:
         vs = get_vector_store()
-        vs.add_documents(
-            documents=documents,
-            ids=ids,
-        )
-        print(f"[VECTOR_STORE] Stored {len(documents)} chunks for '{filename}'.")
+        vs.add_documents(documents=documents, ids=ids)
+        print(f"[VECTOR_STORE] Stored {len(documents)} chunks for '{filename}' (user_id={user_id}).")
 
     return len(documents)
 
 
-def search_chunks(question: str, k: int = 4, filter_source: Optional[str] = None) -> List[Dict[str, Any]]:
+def search_chunks(
+    question: str,
+    k: int = 4,
+    filter_source: Optional[str] = None,
+    user_id: Optional[int] = None,
+) -> List[Dict[str, Any]]:
     """
-    Find relevant chunks across all stored documents or filtered to a single document.
-    Returns rich source metadata including snippet and relevance score.
+    Find relevant chunks. Filters by user_id (required for per-user isolation)
+    and optionally by specific document.
     """
     try:
         coll = get_collection()
-        data = coll.get()
-        ids = data.get("ids", []) if data else []
-        if not ids:
+
+        # Build where filter
+        where_conditions = []
+        if user_id is not None:
+            where_conditions.append({"user_id": str(user_id)})
+        if filter_source and filter_source.strip():
+            where_conditions.append({"source": filter_source.strip()})
+
+        search_kwargs: Dict[str, Any] = {}
+        if len(where_conditions) == 1:
+            search_kwargs["filter"] = where_conditions[0]
+        elif len(where_conditions) > 1:
+            search_kwargs["filter"] = {"$and": where_conditions}
+
+        # Check if there's data to search
+        check = coll.get(where=search_kwargs.get("filter")) if search_kwargs.get("filter") else coll.get()
+        if not check.get("ids"):
             return []
 
         vs = get_vector_store()
-        search_kwargs = {}
-        if filter_source and filter_source.strip():
-            search_kwargs["filter"] = {"source": filter_source.strip()}
-
         results = vs.similarity_search_with_score(question, k=k, **search_kwargs)
 
         matches = []
