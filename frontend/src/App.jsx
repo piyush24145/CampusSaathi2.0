@@ -516,7 +516,10 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
               <button
                 type="button"
                 className={`filter-pill ${selectedDocFilter === null ? "active" : ""}`}
-                onClick={() => setSelectedDocFilter(null)}
+                onClick={() => {
+                  setSelectedDocFilter(null);
+                  setIsMobileDrawerOpen(false);
+                }}
               >
                 All Notices
               </button>
@@ -525,11 +528,12 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
                   key={d.filename}
                   type="button"
                   className={`filter-pill ${selectedDocFilter === d.filename ? "active" : ""}`}
-                  onClick={() =>
+                  onClick={() => {
                     setSelectedDocFilter(
                       selectedDocFilter === d.filename ? null : d.filename
-                    )
-                  }
+                    );
+                    setIsMobileDrawerOpen(false);
+                  }}
                   title={`Focus questions exclusively on ${d.filename}`}
                 >
                   {d.filename.replace(".pdf", "").slice(0, 16)}...
@@ -553,11 +557,12 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
                     selectedDocFilter === doc.filename ? "selected" : ""
                   }`}
                   key={doc.filename}
-                  onClick={() =>
+                  onClick={() => {
                     setSelectedDocFilter(
                       selectedDocFilter === doc.filename ? null : doc.filename
-                    )
-                  }
+                    );
+                    setIsMobileDrawerOpen(false);
+                  }}
                 >
                   <div className="doc-card-left">
                     <span className="doc-pdf-emoji">📄</span>
@@ -632,6 +637,36 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
           </div>
         </div>
 
+        {/* User Profile & Logout inside Sidebar (Especially great for Mobile Drawer) */}
+        <div className="sidebar-user-card">
+          <div className="sidebar-user-avatar">
+            {currentUser?.picture ? (
+              <img src={currentUser.picture} alt="" className="avatar-img" />
+            ) : (
+              <span>{(currentUser?.name || "U")[0].toUpperCase()}</span>
+            )}
+          </div>
+          <div className="sidebar-user-info">
+            <span className="sidebar-user-name" title={currentUser?.name}>
+              {currentUser?.name || "Student"}
+            </span>
+            <span className="sidebar-user-email" title={currentUser?.email}>
+              {currentUser?.email || ""}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="sidebar-logout-btn"
+            title="Log out"
+            onClick={() => {
+              stopAudioPlayback();
+              onLogout();
+            }}
+          >
+            🚪 Logout
+          </button>
+        </div>
+
         <div className="sidebar-footer">
           CampusSathi AI — Grounded answers with exact citations and multi-notice support.
         </div>
@@ -653,17 +688,17 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
               <span className="hamburger-line" />
             </button>
 
-            <div>
+            <div className="topbar-branding">
               <div className="title-row">
                 <h1>CampusSathi AI</h1>
                 <span className="doc-count-badge">
                   {documents.length > 0
                     ? `📚 ${documents.length} ${documents.length === 1 ? "Notice" : "Notices"}`
-                    : "📄 No Notices Loaded"}
+                    : "📄 No Notices"}
                 </span>
               </div>
               <p className="topbar-subtitle">
-                Ask about the college notice via text or voice with source citations
+                Ask about college notices via text or voice with citations
               </p>
             </div>
           </div>
@@ -692,7 +727,14 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
 
             {/* User info + Logout */}
             <div className="topbar-user">
-              <span className="topbar-user-name">👤 {currentUser.name}</span>
+              <span className="topbar-user-avatar">
+                {currentUser?.picture ? (
+                  <img src={currentUser.picture} alt="" className="avatar-img" />
+                ) : (
+                  <span>{(currentUser?.name || "U")[0].toUpperCase()}</span>
+                )}
+              </span>
+              <span className="topbar-user-name">{currentUser?.name || "User"}</span>
               <button
                 type="button"
                 className="logout-btn"

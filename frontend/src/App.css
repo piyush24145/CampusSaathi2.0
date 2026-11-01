@@ -1841,19 +1841,317 @@
 /* ===================================================
    Responsive Design & Mobile Viewports
    =================================================== */
-@media (max-width: 860px) {
+/* ===================================================
+   User Card & Profile Components (Sidebar & Topbar)
+   =================================================== */
+
+/* ── Topbar User Info + Logout ── */
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 4px 8px 4px 6px;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.topbar-user:hover {
+  border-color: var(--border-strong);
+}
+
+.topbar-user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.topbar-user-avatar img.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.topbar-user-name {
+  font-size: 12px;
+  color: var(--text-main);
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-full);
+  padding: 3px 9px;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* ── Sidebar User Card (Bottom of Drawer) ── */
+.sidebar-user-card {
+  margin-top: auto;
+  padding: 12px 14px;
+  background: var(--sidebar-card);
+  border: 1px solid var(--sidebar-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sidebar-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-user-avatar img.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sidebar-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-email {
+  font-size: 11px;
+  color: var(--sidebar-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-logout-btn {
+  padding: 6px 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-logout-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* ===================================================
+   Source Citation Cards (Complete & Robust Styling)
+   =================================================== */
+.source-citation-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.source-citation-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-xs);
+}
+
+.source-citation-card.expanded {
+  border-color: var(--primary-border);
+  background: #ffffff;
+}
+
+.source-citation-header {
+  width: 100%;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.source-citation-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.source-meta {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.source-doc-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.source-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.source-chunk-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+.source-citation-actions {
+  flex-shrink: 0;
+}
+
+.source-snippet-quote {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.source-snippet-quote p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+  font-style: italic;
+}
+
+.source-snippet-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.copy-snippet-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-snippet-btn:hover {
+  background: #ffffff;
+  color: var(--text-main);
+  border-color: #94a3b8;
+}
+
+.snippet-verified-tag {
+  font-size: 10.5px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* ===================================================
+   Responsive Overhaul & Mobile Viewports
+   =================================================== */
+
+@media (max-width: 900px) {
   .welcome-features-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
 @media (max-width: 768px) {
+  /* ── Mobile Drawer & Sidebar ── */
   .mobile-hamburger-btn {
     display: flex;
+    flex-shrink: 0;
   }
   
   .drawer-close-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .drawer-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
   
   .sidebar {
@@ -1861,25 +2159,45 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: 280px;
-    max-width: 85vw;
+    width: 290px;
+    max-width: 84vw;
+    height: 100vh;
+    height: 100dvh;
     transform: translateX(-100%);
     box-shadow: none;
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .sidebar.drawer-open {
     transform: translateX(0);
-    box-shadow: 0 0 32px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
   }
   
   .drawer-overlay {
     display: block;
+    z-index: 999;
   }
   
+  /* ── Topbar (Clean, Uncrowded & Non-Overlapping) ── */
   .topbar {
-    height: 60px;
-    padding: 0 14px;
+    height: 56px;
+    padding: 0 12px;
     gap: 8px;
+  }
+
+  .topbar-left {
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .topbar-branding {
+    min-width: 0;
+  }
+
+  .title-row {
+    gap: 6px;
   }
 
   .topbar-subtitle {
@@ -1888,83 +2206,109 @@
 
   .topbar h1 {
     font-size: 15px;
+    letter-spacing: -0.2px;
   }
 
   .doc-count-badge {
     font-size: 10px;
-    padding: 2px 7px;
+    padding: 2px 6px;
   }
 
-  .server-status-pill,
+  .topbar-actions {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .server-status-pill {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .server-status-text {
+    display: none;
+  }
+
   .voice-toggle-topbar {
-    padding: 6px 9px;
+    padding: 6px 8px;
+    gap: 4px;
   }
   
-  .server-status-text,
   .voice-toggle-text {
     display: none;
   }
-  
+
+  .topbar-user {
+    padding: 3px 6px;
+    gap: 5px;
+  }
+
+  .topbar-user-name {
+    display: none;
+  }
+
+  .logout-btn {
+    padding: 3px 7px;
+    font-size: 10.5px;
+  }
+
+  /* ── Conversation & Messages ── */
   .conversation {
-    padding: 14px 12px 14px;
+    padding: 12px 10px 14px;
+  }
+
+  .active-filter-bar {
+    padding: 6px 12px;
+    font-size: 11px;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
   .welcome {
-    padding: 10px 0;
+    padding: 10px 4px;
   }
 
   .welcome-title {
-    font-size: 22px;
+    font-size: 20px;
+    line-height: 1.3;
   }
 
   .welcome-desc {
-    font-size: 13.5px;
-    margin-bottom: 18px;
+    font-size: 13px;
+    margin-bottom: 16px;
   }
 
   .welcome-upload-dropzone {
-    padding: 12px 14px;
-    gap: 12px;
-  }
-
-  .dropzone-info strong {
-    font-size: 13px;
-  }
-
-  .dropzone-info p {
-    font-size: 11px;
-  }
-
-  .dropzone-btn-pill {
-    padding: 5px 10px;
-    font-size: 11px;
-  }
-
-  .hero-mic-button {
-    width: 100%;
-    max-width: 320px;
-    justify-content: center;
-    font-size: 13px;
-    padding: 11px 18px;
-  }
-
-  .message {
+    padding: 12px;
     gap: 10px;
   }
 
+  .message {
+    gap: 8px;
+    margin-bottom: 14px;
+    width: 100%;
+  }
+
   .avatar {
-    width: 32px;
-    height: 32px;
-    font-size: 11px;
+    width: 28px;
+    height: 28px;
+    font-size: 10.5px;
+    flex-shrink: 0;
   }
 
   .message-body {
-    max-width: 90%;
+    max-width: 92%;
+    min-width: 0;
+  }
+
+  .message-header {
+    gap: 6px;
   }
 
   .message-text {
-    font-size: 14px;
-    padding: 12px 14px;
+    font-size: 13.5px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    line-height: 1.5;
   }
 
   .message-text table {
@@ -1972,71 +2316,101 @@
     overflow-x: auto;
     white-space: nowrap;
     max-width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Writing Section (Composer) Mobile Safe Spacing */
+  .source-doc-name {
+    max-width: 140px;
+  }
+
+  .expand-toggle-label {
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  /* ── Composer (Bottom Input) Mobile Safe Design ── */
   .composer-container {
-    padding: 8px 12px max(12px, env(safe-area-inset-bottom));
+    padding: 6px 10px max(10px, env(safe-area-inset-bottom));
   }
   
   .composer-card {
-    padding: 10px 12px 8px 12px;
+    padding: 8px 10px 6px 12px;
     border-radius: var(--radius-lg);
+    gap: 6px;
   }
 
-  /* Prevent iOS Safari from auto-zooming by enforcing 16px font-size */
   .composer-textarea {
-    font-size: 16px;
+    font-size: 16px; /* Prevents auto-zoom on iOS */
     min-height: 28px;
+    max-height: 100px;
   }
 
   .composer-textarea::placeholder {
-    font-size: 13.5px;
+    font-size: 13px;
+  }
+
+  .composer-actions-bar {
+    gap: 6px;
+    padding-top: 6px;
   }
 
   .composer-context-pill {
-    max-width: 120px;
+    max-width: 110px;
   }
 
   .chip-text {
-    max-width: 85px;
-    font-size: 11px;
+    max-width: 80px;
+    font-size: 10.5px;
   }
 
   .voice-lang-pill {
-    height: 34px;
-    padding: 0 8px;
-    font-size: 11px;
+    height: 32px;
+    padding: 0 6px;
+    font-size: 10.5px;
   }
 
   .voice-mic-main-btn,
   .composer-send-btn {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .composer-footer-disclaimer {
+    margin-top: 4px;
   }
 
   .composer-footer-disclaimer span {
-    font-size: 10px;
+    font-size: 9.5px;
+    line-height: 1.2;
   }
 
   .voice-banner {
-    width: calc(100% - 24px);
-    bottom: 84px;
-    padding: 8px 12px;
-    font-size: 12px;
+    width: calc(100% - 20px);
+    bottom: 78px;
+    padding: 8px 10px;
+    font-size: 11.5px;
   }
 
   .persistent-audio-player {
-    left: 12px;
-    right: 12px;
-    bottom: 82px;
-    justify-content: space-between;
+    left: 8px;
+    right: 8px;
+    bottom: 74px;
   }
 }
 
+/* Extra Compact Phones (iPhone SE, Galaxy A series <= 380px) */
 @media (max-width: 380px) {
+  .topbar {
+    padding: 0 8px;
+  }
+
   .topbar h1 {
-    font-size: 14px;
+    font-size: 13.5px;
+  }
+
+  .doc-count-badge {
+    display: none;
   }
 
   .composer-context-pill {
@@ -2047,40 +2421,9 @@
     width: 100%;
     justify-content: flex-end;
   }
+
+  .source-doc-name {
+    max-width: 100px;
+  }
 }
 
-
-/* ── Topbar User Info + Logout ── */
-.topbar-user {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 0.3rem 0.7rem 0.3rem 0.9rem;
-}
-.topbar-user-name {
-  font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.75);
-  font-weight: 500;
-  white-space: nowrap;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.logout-btn {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 12px;
-  padding: 0.25rem 0.65rem;
-  color: #fca5a5;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.logout-btn:hover {
-  background: rgba(239, 68, 68, 0.3);
-  color: #fff;
-}
