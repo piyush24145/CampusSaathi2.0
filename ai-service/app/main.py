@@ -1,4 +1,4 @@
-
+﻿
 import os
 import struct
 import asyncio
@@ -27,18 +27,36 @@ from app.document_processor import (
     split_pages_into_chunks,
 )
 
-# Load environment variables from ai-service/.env
-load_dotenv()
+# Load environment variables from candidate paths
+from pathlib import Path
+for _cand in [
+    Path(__file__).resolve().parents[1] / ".env",
+    Path(__file__).resolve().parents[2] / ".env",
+    Path(".env"),
+]:
+    if _cand.exists():
+        load_dotenv(dotenv_path=_cand, override=True)
+
+def get_gnani_api_key() -> str:
+    key = os.getenv("GNANI_API_KEY")
+    if key and key.strip():
+        return key.strip().strip('"').strip("'")
+    for _cand in [
+        Path(__file__).resolve().parents[1] / ".env",
+        Path(__file__).resolve().parents[2] / ".env",
+        Path(".env"),
+    ]:
+        if _cand.exists():
+            load_dotenv(dotenv_path=_cand, override=True)
+            k = os.getenv("GNANI_API_KEY")
+            if k and k.strip():
+                return k.strip().strip('"').strip("'")
+    return ""
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Fast non-blocking boot so Google Cloud Run / health checks pass immediately
-    try:
-        from app.seeder import seed_sample_notices_if_empty
-        # Seed sample notices in background thread if database is empty
-        asyncio.create_task(asyncio.to_thread(seed_sample_notices_if_empty))
-    except Exception as e:
-        print(f"[STARTUP WARNING] Could not schedule background seeder: {e}")
+    # Clean app lifespan - no pre-seeded documents
     yield
 
 app = FastAPI(
@@ -161,7 +179,7 @@ async def extract_document(file: UploadFile = File(...)):
 @app.post("/api/documents/ingest")
 async def ingest_document(
     file: UploadFile = File(...),
-    clear_previous: bool = True,
+    clear_previous: bool = False,
 ):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
@@ -202,9 +220,9 @@ async def ingest_document(
         chunks = split_pages_into_chunks(result["pages"])
         print(f"[INGEST] Generated {len(chunks)} text chunks. Replacing prior notice with new document...")
 
-        # Always clear previous documents so only the currently uploaded PDF is active
+        # Store chunks into ChromaDB (clear_previous=False allows multiple uploaded documents)
         stored_count = await asyncio.to_thread(
-            store_chunks, chunks, file.filename, clear_previous=True
+            store_chunks, chunks, file.filename, clear_previous=clear_previous
         )
         print(f"[INGEST] Done! Stored {stored_count} chunks for active notice '{file.filename}'.")
 
@@ -518,12 +536,12 @@ async def transcribe_audio(
     file: UploadFile = File(...),
     language: str = "en-IN",
 ):
-    api_key = os.getenv("GNANI_API_KEY")
+    api_key = get_gnani_api_key()
 
     if not api_key:
         raise HTTPException(
-            status_code=500,
-            detail="GNANI_API_KEY missing. Check ai-service/.env",
+            status_code=503,
+            detail="GNANI_API_KEY is not configured on the server.",
         )
 
     audio_bytes = await file.read()
@@ -634,13 +652,13 @@ class SpeakRequest(BaseModel):
 
 @app.post("/api/voice/speak")
 async def speak_answer(request: SpeakRequest):
-    api_key = os.getenv("GNANI_API_KEY")
+    api_key = get_gnani_api_key()
     text = request.text.strip()
 
     if not api_key:
         raise HTTPException(
-            status_code=500,
-            detail="GNANI_API_KEY missing. Check ai-service/.env",
+            status_code=503,
+            detail="GNANI_API_KEY is not configured on the server. Please check .env",
         )
 
     if not text:
@@ -656,7 +674,7 @@ async def speak_answer(request: SpeakRequest):
         )
 
     payload = {
-        "text": text,
+        "text": text[:1500],
         "voice": "Poorvi",
         "model": "timbre-v2.5",
         "language": "hi-en",

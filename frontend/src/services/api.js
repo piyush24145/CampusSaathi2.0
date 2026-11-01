@@ -120,7 +120,7 @@ export async function askCampusSathi(question, filterSource = null) {
     return data;
 }
 
-export async function uploadCampusDocument(file, clearPrevious = true) {
+export async function uploadCampusDocument(file, clearPrevious = false) {
     const formData = new FormData();
     formData.append("file", file);
 

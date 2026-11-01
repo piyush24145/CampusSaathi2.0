@@ -27,8 +27,6 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 COPY . .
 
-# Pre-seed sample college notices into ChromaDB during build
-RUN python -c "from app.seeder import seed_sample_notices_if_empty; seed_sample_notices_if_empty()"
 
 EXPOSE 8080
 

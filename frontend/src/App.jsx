@@ -8,7 +8,6 @@ import {
   transcribeAudio,
   speakText,
   getApiBaseUrl,
-  setCustomApiBaseUrl,
   checkBackendHealth,
 } from "./services/api";
 import { AudioRecorder } from "./services/audioRecorder";
@@ -19,7 +18,14 @@ import "./App.css";
 
 export default function App() {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem("campusSathi_chatHistory");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(false);
 
   // Documents State (Phase 5 - Multiple Documents)
@@ -29,12 +35,8 @@ export default function App() {
   const [uploadStatus, setUploadStatus] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Backend Connection & Settings Modal
+  // Backend Connection Status
   const [backendStatus, setBackendStatus] = useState({ online: false, checking: true, url: "" });
-  const [showServerModal, setShowServerModal] = useState(false);
-  const [serverUrlInput, setServerUrlInput] = useState("");
-  const [testResult, setTestResult] = useState(null);
-  const [isTesting, setIsTesting] = useState(false);
 
   // Mobile Drawer State (Phase 6 - Mobile-friendly UI)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -84,36 +86,14 @@ export default function App() {
     }
   }
 
-  async function testBackendUrl() {
-    setIsTesting(true);
-    setTestResult(null);
+  // Persist chat history to localStorage on every update
+  useEffect(() => {
     try {
-      const urlToTest = (serverUrlInput || getApiBaseUrl()).trim().replace(/\/+$/, "");
-      const res = await fetch(`${urlToTest}/api/health`, { method: "GET", signal: AbortSignal.timeout(15000) });
-      if (res.ok) {
-        setTestResult({ success: true, message: "Connected successfully! Backend is online." });
-      } else {
-        setTestResult({ success: false, message: `Server replied with status ${res.status}.` });
-      }
-    } catch (err) {
-      setTestResult({
-        success: false,
-        message: err.name === "TimeoutError" 
-          ? "Request timed out. Please check if your backend server is active." 
-          : `Connection error: ${err.message}`,
-      });
-    } finally {
-      setIsTesting(false);
+      localStorage.setItem("campusSathi_chatHistory", JSON.stringify(messages));
+    } catch {
+      // ignore quota errors
     }
-  }
-
-  function saveBackendUrl() {
-    if (serverUrlInput && serverUrlInput.trim()) {
-      setCustomApiBaseUrl(serverUrlInput.trim());
-    }
-    setShowServerModal(false);
-    verifyBackendAndLoad();
-  }
+  }, [messages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -392,64 +372,82 @@ export default function App() {
   }
 
   // --------------------------------------------------
-  // Document Upload (Single active notice, clears prior document and chat history)
+  // Document Uploads (Multiple Documents Support)
   // --------------------------------------------------
   async function handleFileUpload(event) {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
     if (files.length === 0) return;
 
-    const file = files[0];
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      setErrorMessage(`'${file.name}' is not a PDF. Only PDF files are supported.`);
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      setErrorMessage(`'${file.name}' exceeds the 15 MB size limit.`);
-      return;
-    }
-
     setUploading(true);
     setErrorMessage("");
-    setUploadStatus(`Indexing '${file.name}'... (Clearing prior history)`);
 
+    let successCount = 0;
     try {
-      // 1. Upload new PDF with clearPrevious = true (wiping old document and chunks)
-      await uploadCampusDocument(file, true);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.name.toLowerCase().endsWith(".pdf")) {
+          setErrorMessage(`'${file.name}' is not a PDF. Only PDF files are supported.`);
+          continue;
+        }
+        if (file.size > 15 * 1024 * 1024) {
+          setErrorMessage(`'${file.name}' exceeds the 15 MB size limit.`);
+          continue;
+        }
 
-      // 2. Clear old chat conversation history so questions start completely fresh
-      setMessages([]);
-      setSelectedDocFilter(null);
-      stopAudioPlayback();
+        setUploadStatus(
+          `Indexing [${i + 1}/${files.length}]: ${file.name}... (Extracting text & computing embeddings)`
+        );
 
-      // 3. Reload active document
+        try {
+          await uploadCampusDocument(file, false);
+          successCount++;
+        } catch (err) {
+          console.error("Upload error:", err);
+          setErrorMessage(`Failed to upload '${file.name}': ${err.message}`);
+        }
+      }
+
+      // Refresh documents list
       await loadDocuments();
-
-      setUploadStatus(`✓ Active document: '${file.name}'. Ready for your questions!`);
-      setTimeout(() => setUploadStatus(""), 4500);
-    } catch (err) {
-      console.error("Upload error:", err);
-      setErrorMessage(`Failed to upload '${file.name}': ${err.message}`);
-      setUploadStatus("");
     } finally {
       setUploading(false);
+      if (successCount > 0) {
+        setUploadStatus(`✓ Successfully indexed ${successCount} notice(s)!`);
+        setTimeout(() => setUploadStatus(""), 4500);
+      } else {
+        setUploadStatus("");
+      }
+    }
+  }
+
+  async function handleDeleteDocument(filename) {
+    if (!window.confirm(`Are you sure you want to remove '${filename}'?`)) return;
+    try {
+      await deleteCampusDocument(filename);
+      await loadDocuments();
+      if (selectedDocFilter === filename) {
+        setSelectedDocFilter(null);
+      }
+      setUploadStatus(`✓ Removed '${filename}'.`);
+      setTimeout(() => setUploadStatus(""), 3500);
+    } catch (err) {
+      setErrorMessage(`Could not remove document: ${err.message}`);
     }
   }
 
   async function handleClearAllDocuments() {
     if (documents.length === 0) return;
-    if (!window.confirm("Remove active document and clear conversation history?")) return;
+    if (!window.confirm("Remove ALL uploaded notices from the system?")) return;
 
     try {
       await clearCampusDocuments();
       await loadDocuments();
-      setMessages([]);
       setSelectedDocFilter(null);
-      stopAudioPlayback();
-      setUploadStatus("✓ Active document removed.");
+      setUploadStatus("✓ All documents cleared.");
       setTimeout(() => setUploadStatus(""), 3500);
     } catch (err) {
-      setErrorMessage(`Failed to clear document: ${err.message}`);
+      setErrorMessage(`Failed to clear documents: ${err.message}`);
     }
   }
 
@@ -490,6 +488,7 @@ export default function App() {
           onClick={() => {
             stopAudioPlayback();
             setMessages([]);
+            localStorage.removeItem("campusSathi_chatHistory");
             setIsMobileDrawerOpen(false);
           }}
         >
@@ -499,69 +498,114 @@ export default function App() {
         {/* Document Management Section */}
         <div className="sidebar-doc-section">
           <div className="doc-section-title">
-            <span>ACTIVE NOTICE</span>
+            <span>COLLEGE NOTICES ({documents.length})</span>
             {documents.length > 0 && (
               <button
                 type="button"
                 className="clear-all-link"
                 onClick={handleClearAllDocuments}
-                title="Remove active notice"
+                title="Remove all uploaded notices"
               >
-                Clear
+                Clear all
               </button>
             )}
           </div>
 
+          {/* Quick Filter: All vs Specific Notice */}
+          {documents.length > 1 && (
+            <div className="filter-pill-container">
+              <button
+                type="button"
+                className={`filter-pill ${selectedDocFilter === null ? "active" : ""}`}
+                onClick={() => setSelectedDocFilter(null)}
+              >
+                All Notices
+              </button>
+              {documents.map((d) => (
+                <button
+                  key={d.filename}
+                  type="button"
+                  className={`filter-pill ${selectedDocFilter === d.filename ? "active" : ""}`}
+                  onClick={() =>
+                    setSelectedDocFilter(
+                      selectedDocFilter === d.filename ? null : d.filename
+                    )
+                  }
+                  title={`Focus questions exclusively on ${d.filename}`}
+                >
+                  {d.filename.replace(".pdf", "").slice(0, 16)}...
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Document list */}
           <div className="sidebar-doc-list">
             {documents.length === 0 ? (
               <div className="no-docs-hint">
                 <span className="no-docs-icon">📄</span>
-                <p>No notice loaded.</p>
-                <small>Upload a PDF notice to extract details and ask questions.</small>
+                <p>No college notices uploaded yet.</p>
+                <small>Upload multiple exam, hostel, or library notices (PDF) to ask questions!</small>
               </div>
             ) : (
-              <div className="doc-card-item selected">
-                <div className="doc-card-left">
-                  <span className="doc-pdf-emoji">📄</span>
-                  <div className="doc-card-details">
-                    <strong className="doc-card-name" title={documents[0].filename}>
-                      {documents[0].filename}
-                    </strong>
-                    <span className="doc-card-meta">
-                      {documents[0].total_pages} {documents[0].total_pages === 1 ? "page" : "pages"} · {documents[0].total_chunks} chunks
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="delete-doc-btn"
-                  onClick={handleClearAllDocuments}
-                  title="Remove document"
-                  aria-label="Remove document"
+              documents.map((doc) => (
+                <div
+                  className={`doc-card-item ${
+                    selectedDocFilter === doc.filename ? "selected" : ""
+                  }`}
+                  key={doc.filename}
+                  onClick={() =>
+                    setSelectedDocFilter(
+                      selectedDocFilter === doc.filename ? null : doc.filename
+                    )
+                  }
                 >
-                  🗑️
-                </button>
-              </div>
+                  <div className="doc-card-left">
+                    <span className="doc-pdf-emoji">📄</span>
+                    <div className="doc-card-details">
+                      <strong className="doc-card-name" title={doc.filename}>
+                        {doc.filename}
+                      </strong>
+                      <span className="doc-card-meta">
+                        {doc.total_pages} {doc.total_pages === 1 ? "page" : "pages"} · {doc.total_chunks} chunks
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="delete-doc-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteDocument(doc.filename);
+                    }}
+                    title={`Delete ${doc.filename}`}
+                    aria-label={`Delete ${doc.filename}`}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))
             )}
           </div>
 
-          {/* Upload Button in Sidebar */}
+          {/* Upload Button in Sidebar (Multiple PDFs supported) */}
           <label className={`sidebar-upload-btn ${uploading ? "uploading" : ""}`}>
             {uploading ? (
               <>
                 <span className="spinner-small" />
-                <span>Processing PDF...</span>
+                <span>Processing PDF(s)...</span>
               </>
             ) : (
               <>
-                <span>{documents.length > 0 ? "↻ Replace with New PDF" : "↑ Upload Notice (PDF)"}</span>
+                <span>{documents.length > 0 ? "+ Add More Notices (PDF)" : "↑ Upload Notices (PDF)"}</span>
               </>
             )}
             <input
               ref={fileInputRef}
               type="file"
               accept=".pdf,application/pdf"
+              multiple
               onChange={handleFileUpload}
               disabled={uploading}
               hidden
@@ -614,7 +658,9 @@ export default function App() {
               <div className="title-row">
                 <h1>CampusSathi AI</h1>
                 <span className="doc-count-badge">
-                  {documents.length > 0 ? `📄 ${documents[0].filename}` : "📄 No Notice Loaded"}
+                  {documents.length > 0
+                    ? `📚 ${documents.length} ${documents.length === 1 ? "Notice" : "Notices"}`
+                    : "📄 No Notices Loaded"}
                 </span>
               </div>
               <p className="topbar-subtitle">
@@ -624,21 +670,12 @@ export default function App() {
           </div>
 
           <div className="topbar-actions">
-            <button
-              type="button"
-              className={`server-status-pill ${backendStatus.online ? "online" : "offline"}`}
-              onClick={() => {
-                setServerUrlInput(backendStatus.url || getApiBaseUrl());
-                setTestResult(null);
-                setShowServerModal(true);
-              }}
-              title="Server Connection Status"
-            >
+            <div className={`server-status-pill ${backendStatus.online ? "online" : backendStatus.checking ? "checking" : "offline"}`} title={backendStatus.online ? "Backend connected" : "Backend offline"}>
               <span className={`status-indicator-dot ${backendStatus.online ? "online" : backendStatus.checking ? "checking" : "offline"}`} />
               <span className="server-status-text">
-                {backendStatus.checking ? "Checking..." : backendStatus.online ? "Server Online" : "Connect Server"}
+                {backendStatus.checking ? "Connecting..." : backendStatus.online ? "🟢 AI Ready" : "🔴 Offline"}
               </span>
-            </button>
+            </div>
 
             <button
               type="button"
@@ -698,15 +735,72 @@ export default function App() {
         <section className="conversation">
           {messages.length === 0 ? (
             <div className="welcome">
-              <div className="welcome-icon">CS</div>
-              <h2>Campus notices, answered instantly.</h2>
-              <p>
-                Ask questions about your college circulars using{" "}
-                <strong>Voice (Hindi / English)</strong> or <strong>Text</strong>.
-                Each answer includes exact PDF source citations and page numbers.
+              <div className="welcome-hero-badge">
+                <span className="sparkle-icon">✦</span> Campus Assistant
+              </div>
+              <h2 className="welcome-title">Campus notices, answered instantly.</h2>
+              <p className="welcome-desc">
+                Ask questions about your college circulars using <strong>Voice (Hindi / English)</strong> or <strong>Text</strong>. Every response is verified with exact PDF source citations and page numbers.
               </p>
 
-              {/* Hero Action for Voice */}
+              {/* Quick Notice Upload Zone if empty, or Notice Ready Status */}
+              {documents.length === 0 ? (
+                <div
+                  className="welcome-upload-dropzone"
+                  onClick={() => fileInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+                >
+                  <div className="dropzone-icon-box">
+                    <svg className="dropzone-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </div>
+                  <div className="dropzone-info">
+                    <strong>Click to Upload College Notices (PDF)</strong>
+                    <p>Select exam circulars, fee schedules, hostel rules, or library guidelines</p>
+                  </div>
+                  <span className="dropzone-btn-pill">Select PDFs</span>
+                </div>
+              ) : (
+                <div className="welcome-ready-card">
+                  <div className="ready-card-badge">
+                    <span>📚</span>
+                    <strong>{documents.length} {documents.length === 1 ? "Notice" : "Notices"} Loaded & Indexed</strong>
+                  </div>
+                  <p>Type your question below or tap the microphone to ask in Hindi or English.</p>
+                </div>
+              )}
+
+              {/* Key Features Triplet */}
+              <div className="welcome-features-grid">
+                <div className="feature-pill-card">
+                  <span className="feature-emoji">🎙️</span>
+                  <div>
+                    <strong>Bilingual Voice</strong>
+                    <p>Hindi & English speech recognition</p>
+                  </div>
+                </div>
+                <div className="feature-pill-card">
+                  <span className="feature-emoji">📑</span>
+                  <div>
+                    <strong>Exact Citations</strong>
+                    <p>Verified with page numbers</p>
+                  </div>
+                </div>
+                <div className="feature-pill-card">
+                  <span className="feature-emoji">⚡</span>
+                  <div>
+                    <strong>Multi-Notice RAG</strong>
+                    <p>Answers across all documents</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Voice CTA Button */}
               <div className="welcome-voice-cta">
                 <button
                   type="button"
@@ -717,28 +811,6 @@ export default function App() {
                   <span className="hero-mic-icon">🎙️</span>
                   <span>Tap to Speak Question ({voiceLang === "hi-IN" ? "Hindi" : "English"})</span>
                 </button>
-              </div>
-
-              {/* Quick suggestions based on uploaded notices */}
-              <div className="suggestions-wrapper">
-                <span className="suggestions-title">TRY ASKING:</span>
-                <div className="suggestions">
-                  {[
-                    "When do the semester examinations start and what is the fee?",
-                    "What is the hostel curfew time and total fee?",
-                    "How many books can a student borrow from the library?",
-                    "What is the Sunday mess menu?",
-                  ].map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => submitQuestion(item, false)}
-                    >
-                      <span>{item}</span>
-                      <span className="arrow-icon">↗</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           ) : (
@@ -772,7 +844,7 @@ export default function App() {
               <div className="recording-status-box">
                 <span className="recording-pulse-dot" />
                 <span className="recording-timer">{recordDuration}s</span>
-                <span className="recording-hint">Listening... Speak now or tap mic to finish</span>
+                <span className="recording-hint">Listening to your voice... Speak now or tap mic to finish</span>
               </div>
             ) : isTranscribing ? (
               <div className="transcribing-status-box">
@@ -792,10 +864,11 @@ export default function App() {
           textSnippet={currentlySpeakingSnippet}
         />
 
-        {/* Chat Composer Fixed at Bottom */}
-        <form className="composer" onSubmit={handleSubmit}>
-          <div className="composer-input-row">
+        {/* Unified Chat Composer at Bottom */}
+        <div className="composer-container">
+          <form className="composer-card" onSubmit={handleSubmit}>
             <textarea
+              className="composer-textarea"
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               onKeyDown={(event) => {
@@ -812,124 +885,75 @@ export default function App() {
                 isRecording
                   ? "Listening to your voice... Speak your question..."
                   : documents.length === 0
-                  ? "Upload a college notice (PDF) to start asking questions..."
-                  : `Ask anything about ${documents[0].filename}...`
+                  ? "Upload college notices (PDF) to start asking questions..."
+                  : `Ask anything across ${
+                      selectedDocFilter
+                        ? selectedDocFilter
+                        : `${documents.length} uploaded notice${documents.length === 1 ? "" : "s"}`
+                    }...`
               }
-              rows={2}
+              rows={1}
               disabled={loading || isTranscribing}
             />
 
-            {/* Voice Recorder Control */}
-            <VoiceRecorder
-              isRecording={isRecording}
-              isTranscribing={isTranscribing}
-              recordDuration={recordDuration}
-              voiceLang={voiceLang}
-              onToggleRecording={handleToggleRecording}
-              onToggleLang={() =>
-                setVoiceLang(voiceLang === "en-IN" ? "hi-IN" : "en-IN")
-              }
-              disabled={loading}
-            />
-          </div>
-
-          <div className="composer-bottom">
-            <div className="composer-hint">
-              {documents.length > 0 ? (
-                <span>
-                  Active Notice: <strong>{documents[0].filename}</strong>
-                </span>
-              ) : (
-                <span>No notice uploaded yet</span>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="send-button"
-              disabled={
-                loading || !question.trim() || isRecording || isTranscribing
-              }
-            >
-              {loading ? (
-                <>
-                  <span className="spinner-small" />
-                  <span>Thinking...</span>
-                </>
-              ) : (
-                <>
-                  <span>Ask AI</span>
-                  <span className="send-arrow">↑</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-
-        <footer className="disclaimer">
-          CampusSathi answers are verified against uploaded notices. Always cross-check critical dates with original college circulars.
-        </footer>
-      </main>
-
-      {/* Server Settings Modal */}
-      {showServerModal && (
-        <div className="server-modal-backdrop" onClick={() => setShowServerModal(false)}>
-          <div className="server-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="server-modal-header">
-              <h3>⚙️ Server Settings</h3>
-              <button
-                type="button"
-                className="server-modal-close"
-                onClick={() => setShowServerModal(false)}
-                aria-label="Close settings"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="server-modal-body">
-              <p>
-                Configure the backend API server URL for CampusSathi.
-              </p>
-              <div className="server-input-group">
-                <label htmlFor="cloud-run-url">Server API URL:</label>
-                <input
-                  id="cloud-run-url"
-                  type="url"
-                  className="server-input"
-                  placeholder="http://localhost:8000 or https://your-server.app"
-                  value={serverUrlInput}
-                  onChange={(e) => setServerUrlInput(e.target.value)}
-                />
+            <div className="composer-actions-bar">
+              {/* Left Context Notice Badge */}
+              <div className="composer-context-pill">
+                {documents.length > 0 ? (
+                  <span className="context-chip active" title={selectedDocFilter || `${documents.length} notices`}>
+                    <span className="chip-icon">📄</span>
+                    <span className="chip-text">
+                      {selectedDocFilter ? selectedDocFilter.replace(".pdf", "") : `${documents.length} ${documents.length === 1 ? "notice" : "notices"}`}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="context-chip empty">
+                    <span className="chip-icon">⚠️</span>
+                    <span className="chip-text">No notice uploaded</span>
+                  </span>
+                )}
               </div>
 
-              {testResult && (
-                <div className={`server-test-result ${testResult.success ? "success" : "error"}`}>
-                  <span>{testResult.success ? "✅" : "❌"}</span>
-                  <span>{testResult.message}</span>
-                </div>
-              )}
+              {/* Right Controls & Send Button */}
+              <div className="composer-buttons-group">
+                <VoiceRecorder
+                  isRecording={isRecording}
+                  isTranscribing={isTranscribing}
+                  recordDuration={recordDuration}
+                  voiceLang={voiceLang}
+                  onToggleRecording={handleToggleRecording}
+                  onToggleLang={() =>
+                    setVoiceLang(voiceLang === "en-IN" ? "hi-IN" : "en-IN")
+                  }
+                  disabled={loading}
+                />
+
+                <button
+                  type="submit"
+                  className={`composer-send-btn ${question.trim() ? "has-text" : ""}`}
+                  disabled={loading || !question.trim() || isRecording || isTranscribing}
+                  title="Send question (Enter)"
+                  aria-label="Send question"
+                >
+                  {loading ? (
+                    <span className="spinner-small" />
+                  ) : (
+                    <svg className="send-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="19" x2="12" y2="5" />
+                      <polyline points="5 12 12 5 19 12" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="server-modal-footer">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={testBackendUrl}
-                disabled={isTesting}
-              >
-                {isTesting ? "Testing..." : "⚡ Test Connection"}
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={saveBackendUrl}
-              >
-                💾 Save & Connect
-              </button>
-            </div>
+          </form>
+
+          <div className="composer-footer-disclaimer">
+            <span>CampusSathi answers are verified against uploaded notices. Always cross-check critical dates with original college circulars.</span>
           </div>
         </div>
-      )}
+      </main>
+
     </div>
   );
 }
-

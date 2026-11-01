@@ -33,8 +33,6 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY data/ /app/data/
 COPY ai-service/ /app/
 
-# Pre-seed sample college notices into ChromaDB during build
-RUN python -c "from app.seeder import seed_sample_notices_if_empty; seed_sample_notices_if_empty()"
 
 # Expose standard Cloud Run port
 EXPOSE 8080
