@@ -172,11 +172,15 @@ export async function askCampusSathi(question, filterSource = null) {
     const payload = { question: question.trim(), k: 4 };
     if (filterSource?.trim()) payload.filter_source = filterSource.trim();
 
-    const response = await apiFetch("/api/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-    });
+    const response = await apiFetch(
+        "/api/ask",
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        },
+        120000
+    );
 
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Could not get an answer.");

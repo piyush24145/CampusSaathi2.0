@@ -180,10 +180,44 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
   }
 
   // --------------------------------------------------
-  // Voice Input (STT)
+  // Voice Input (STT) & Anti-Duplication Helper
   // --------------------------------------------------
   const recognitionRef = useRef(null);
   const realtimeTextRef = useRef("");
+  const finalTranscriptRef = useRef("");
+
+  function deduplicateSpeech(text) {
+    if (!text) return "";
+    // 1. Remove consecutive identical words
+    let words = text.trim().split(/\s+/);
+    let deduped = [];
+    for (let i = 0; i < words.length; i++) {
+      if (i === 0 || words[i].toLowerCase() !== words[i - 1].toLowerCase()) {
+        deduped.push(words[i]);
+      }
+    }
+
+    // 2. Remove consecutive identical multi-word phrases (e.g. "give answer give answer")
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const maxLen = Math.floor(deduped.length / 2);
+      for (let len = maxLen; len >= 1; len--) {
+        for (let i = 0; i <= deduped.length - 2 * len; i++) {
+          const p1 = deduped.slice(i, i + len).join(" ").toLowerCase();
+          const p2 = deduped.slice(i + len, i + 2 * len).join(" ").toLowerCase();
+          if (p1 === p2) {
+            deduped.splice(i + len, len);
+            changed = true;
+            break;
+          }
+        }
+        if (changed) break;
+      }
+    }
+
+    return deduped.join(" ");
+  }
 
   async function handleToggleRecording() {
     stopAudioPlayback();
@@ -212,7 +246,7 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
           const audioBlob = await audioRecorderRef.current.stop();
           if (audioBlob && audioBlob.size > 800) {
             const data = await transcribeAudio(audioBlob, voiceLang);
-            const transcript = data.transcript?.trim() || "";
+            const transcript = deduplicateSpeech(data.transcript?.trim() || "");
             if (transcript) {
               setVoiceStatus(`Recognized: "${transcript}"`);
               setQuestion(transcript);
@@ -232,12 +266,15 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
     } else {
       // User tapped Start Speaking
       realtimeTextRef.current = "";
+      finalTranscriptRef.current = "";
       setRecordDuration(0);
 
       if (SpeechRec) {
         try {
           const recognition = new SpeechRec();
-          recognition.continuous = true;
+          // On mobile, continuous=true causes Android Chrome to emit duplicate looped buffers
+          const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone/i.test(navigator.userAgent);
+          recognition.continuous = !isMobile;
           recognition.interimResults = true;
           recognition.lang = voiceLang;
 
@@ -249,11 +286,19 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
           };
 
           recognition.onresult = (e) => {
-            let transcript = "";
-            for (let i = 0; i < e.results.length; i++) {
-              transcript += e.results[i][0].transcript + " ";
+            let interimTranscript = "";
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+              const piece = e.results[i][0].transcript;
+              if (e.results[i].isFinal) {
+                finalTranscriptRef.current += " " + piece;
+              } else {
+                interimTranscript += " " + piece;
+              }
             }
-            const clean = transcript.trim();
+
+            const rawCombined = (finalTranscriptRef.current + " " + interimTranscript).trim();
+            const clean = deduplicateSpeech(rawCombined);
+
             if (clean) {
               realtimeTextRef.current = clean;
               setQuestion(clean);
@@ -277,8 +322,9 @@ export default function App({ currentUser, onLogout }) {  const [question, setQu
             clearInterval(recordingTimerRef.current);
 
             setTimeout(() => {
-              const final = realtimeTextRef.current.trim();
+              const final = deduplicateSpeech(realtimeTextRef.current || finalTranscriptRef.current);
               if (final) {
+                setQuestion(final);
                 setVoiceStatus(`Recognized: "${final}"`);
                 submitQuestion(final, true);
                 setTimeout(() => setVoiceStatus(""), 4000);

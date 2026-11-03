@@ -1,6 +1,7 @@
 # 🚀 CampusSathi AI - Google Cloud Run Deployment Guide
+Powered by **Gnani AI** (Prisma STT, Timbre TTS & Evon Reasoning Model)
 
-Yeh guide aapko CampusSathi AI ke backend (FastAPI + ChromaDB + LangChain + OpenRouter) ko **Google Cloud Run** par deploy karne ka step-by-step tarika batata hai taaki **Render ke rate limits, slow cold starts, aur memory crashes se 100% chutkara mil sake**.
+Yeh guide aapko CampusSathi AI ke backend (FastAPI + ChromaDB + LangChain + Gnani AI) ko **Google Cloud Run** par deploy karne ka step-by-step tarika batata hai taaki **Render ke rate limits, slow cold starts, aur memory crashes se 100% chutkara mil sake**.
 
 ---
 
@@ -12,7 +13,7 @@ Yeh guide aapko CampusSathi AI ke backend (FastAPI + ChromaDB + LangChain + Open
 | **RAM (Memory)** | Max 512 MB (PyTorch OOM crash karta hai) | **1 GiB - 2 GiB allocate kar sakte hain** |
 | **Cold Starts** | 45-60 seconds (so jata hai) | **1-3 seconds (fast auto-scaling)** |
 | **HuggingFace Rate Limits** | Startup pe model download karta tha | **Docker image me pehle se baked hai (0 download)** |
-| **OpenRouter 429 Failover** | Direct crash hota tha | **Automatic multi-model fallback & backoff** |
+| **Gnani AI Integration** | High latency on slow hosts | **Fast Indian regional edge (asia-south1)** |
 
 ---
 
@@ -58,9 +59,10 @@ Aap do tarike se deploy kar sakte hain:
 
 6. **Environment Variables Add karein:**
    - **Environment Variables** tab me jayein aur yeh keys add karein:
-     - `OPENROUTER_API_KEY`: *(Apni OpenRouter API Key dalein)*
-     - `OPENROUTER_MODEL`: `meta-llama/llama-3.3-70b-instruct:free` *(Optional - agar blank chhodenge toh bhi automatic smart fallback chalega)*
-     - `GNANI_API_KEY`: *(Apni Gnani API Key dalein - optional)*
+     - `GNANI_API_KEY`: *(Apni Gnani API Key dalein)*
+     - `HUGGINGFACE_API_KEY`: *(Apna Hugging Face Token dalein)*
+     - `JWT_SECRET_KEY`: *(Apna JWT Secret dalein)*
+     - `GOOGLE_CLIENT_ID`: *(Apna Google Client ID dalein)*
 
 7. **Deploy karein:**
    - Niche **"Create"** button par click karein.
@@ -89,56 +91,10 @@ Agar aapke system me `gcloud` CLI installed hai:
      --memory 2Gi \
      --cpu 1 \
      --port 8080 \
-     --set-env-vars "OPENROUTER_API_KEY=your_openrouter_api_key_here"
+     --set-env-vars "GNANI_API_KEY=your_gnani_key,HUGGINGFACE_API_KEY=your_hf_token"
    ```
-
-   *(Windows users direct `deploy-cloudrun.bat` double click karke bhi chala sakte hain!)*
 
 3. Command complete hote hi terminal par aapka **Live URL** aa jayega:
    ```
    Service URL: https://campussathi-ai-xxxx-uc.a.run.app
    ```
-
----
-
-## 🔗 Frontend (Vercel) Se Connect Karna
-
-Jab Cloud Run ka URL mil jaye:
-
-### Option A: Vercel Settings Me Permanent Connect Karna
-1. [vercel.com](https://vercel.com/) dashboard me jayein.
-2. Apne **CampusSathi** project par click karein -> **Settings** -> **Environment Variables**.
-3. Naya variable add karein:
-   - **Key**: `VITE_API_URL`
-   - **Value**: Aapka Cloud Run URL (e.g. `https://campussathi-ai-xxxx-uc.a.run.app`)
-4. Save karein aur **Redeploy** karein.
-
-### Option B: Instant UI Connect (Bina Vercel Redeploy Ke)
-1. Apni live frontend website open karein.
-2. Top right me **"Connect Backend"** / Server status pill par click karein.
-3. Apna Cloud Run URL paste karein aur **"⚡ Test Connection"** dabayein.
-4. "Connected successfully!" aate hi **"💾 Save & Connect"** par click karein. Instant connect ho jayega!
-
----
-
-## 🛡️ Rate Limits & Crash Protection (Kya Naya Kiya Hai?)
-
-1. **Pre-baked Embedding Model**:
-   - Hugging Face `sentence-transformers/all-MiniLM-L6-v2` ko Docker build ke waqt hi container image ke andar download kar diya gaya hai.
-   - Container start hone par **Hugging Face ko koi call nahi jati**, isliye unauthenticated rate limit ka 0% chance hai!
-
-2. **Automatic OpenRouter Model Failover (HTTP 429 Prevention)**:
-   - Agar OpenRouter ka primary free model rate-limit (429) ya overloaded (503) ho jata hai, toh backend crash hone ke bajaye **automatically next free model** par switch kar leta hai:
-     - `meta-llama/llama-3.3-70b-instruct:free`
-     - `google/gemini-2.0-flash-exp:free`
-     - `mistralai/mistral-7b-instruct:free`
-     - `openrouter/free`
-     - `qwen/qwen-2.5-72b-instruct:free`
-   - Student ko hamesha answer milta hai aur request fail nahi hoti!
-
-3. **Auto-Seeded Sample Notices**:
-   - Deploy hone ke baad ChromaDB khali nahi rehta.
-   - Exam Schedule, Hostel Allotment, aur Library Rules ke sample notices pehle se vector database me indexed milte hain!
-
-4. **PyTorch CPU Optimization**:
-   - Docker image ka size 2.5 GB se ghatakar sirf **~600 MB** kar diya gaya hai, jisse build aur container startup lightning-fast ho jata hai.

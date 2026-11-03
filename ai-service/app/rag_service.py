@@ -6,7 +6,8 @@ RAG (Retrieval-Augmented Generation) pipeline for CampusSathi.
 Responsibilities:
   - Retrieve relevant document chunks from ChromaDB
   - Build grounded prompt context from multiple documents
-  - Call the LLM (via llm.py) and return structured answer + citations
+  - Call Gnani Evon (gnani/gnani-evon-v3.3-30B-A3B) via Hugging Face
+  - Return structured answer + citations
 """
 
 import asyncio
@@ -58,9 +59,9 @@ def _build_context(matches: List[Dict[str, Any]]) -> str:
 
 
 def _build_system_prompt(doc_list_str: str) -> str:
-    """Build the strict-grounding system prompt for the LLM."""
+    """Build the strict-grounding system prompt for Gnani Evon."""
     return (
-        "You are CampusSathi AI, an intelligent, reliable college student assistant.\n"
+        "You are CampusSathi AI, an intelligent, reliable college student assistant powered by Gnani AI.\n"
         f"Active Uploaded Documents in System: {doc_list_str}\n\n"
         "CRITICAL INSTRUCTIONS FOR ACCURACY & RELIABILITY:\n"
         "1. STRICT GROUNDING: Answer strictly using ONLY the information provided in the "
@@ -112,22 +113,29 @@ async def answer_question(
     user_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
-    Full RAG pipeline:
+    Full RAG pipeline powered by Gnani Evon:
       1. Check if any documents are available.
-      2. Retrieve top-k relevant chunks.
+      2. Retrieve top-k relevant chunks from vector store.
       3. Build context + system prompt.
-      4. Call LLM for grounded answer.
+      4. Call Gnani Evon (Hugging Face / vLLM).
       5. Return structured response with citations.
 
     Raises HTTPException on configuration or generation errors.
     """
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
+    hf_token = (
+        os.getenv("HUGGINGFACE_API_KEY")
+        or os.getenv("HF_TOKEN")
+        or ""
+    ).strip()
+    evon_key = (os.getenv("GNANI_EVON_KEY") or "").strip()
+    evon_endpoint = (os.getenv("GNANI_EVON_ENDPOINT") or "").strip()
+
+    if not hf_token and not evon_key and not evon_endpoint:
         raise HTTPException(
             status_code=500,
             detail=(
-                "OPENROUTER_API_KEY is missing. "
-                "Check your environment variables."
+                "Gnani Evon credentials missing. "
+                "Please configure GNANI_EVON_KEY or HUGGINGFACE_API_KEY in ai-service/.env."
             ),
         )
 
@@ -180,13 +188,13 @@ async def answer_question(
             },
         ]
 
-        # Step 4: Call LLM
+        # Step 4: Call Gnani Evon
         answer, model_used = await asyncio.to_thread(
-            generate_chat_completion, messages, api_key
+            generate_chat_completion, messages, hf_token
         )
 
         if not answer:
-            raise RuntimeError("The LLM returned an empty answer.")
+            raise RuntimeError("Gnani Evon returned an empty answer.")
 
         # Step 5: Build response
         unanswerable = _is_unanswerable(answer)
@@ -208,8 +216,7 @@ async def answer_question(
         raise HTTPException(
             status_code=502,
             detail=(
-                f"Could not generate an answer: {str(e)}. "
-                "Check your OpenRouter API key, model availability, and network connection."
+                f"Could not generate an answer with Gnani Evon: {str(e)}. "
+                "Check your Hugging Face API key, model availability, and network connection."
             ),
         )
-

@@ -24,9 +24,7 @@ spec:
               cpu: '1000m'
               memory: '2Gi'
           env:
-            - name: OPENROUTER_API_KEY
-              value: 'your_openrouter_api_key_here'
-            - name: OPENROUTER_MODEL
-              value: 'meta-llama/llama-3.3-70b-instruct:free'
+            - name: HUGGINGFACE_API_KEY
+              value: 'your_huggingface_token_here'
             - name: GNANI_API_KEY
               value: ''

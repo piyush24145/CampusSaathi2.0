@@ -10,7 +10,7 @@ All business logic lives in dedicated service modules:
   - app/speech_service.py  → Gnani STT & TTS
   - app/vector_store.py    → ChromaDB operations (per-user isolated)
   - app/document_processor.py → PDF extraction & chunking
-  - app/llm.py             → OpenRouter LLM with fallback
+  - app/llm.py             → Gnani Evon (30B Indic Reasoning Model via Hugging Face / vLLM)
 """
 
 import asyncio
@@ -24,7 +24,7 @@ import httpx
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
@@ -32,7 +32,12 @@ from app.auth_service import create_access_token, get_current_user, hash_passwor
 from app.document_processor import extract_text_from_pdf, split_pages_into_chunks
 from app.models import User, get_db, init_db
 from app.rag_service import answer_question
-from app.speech_service import get_gnani_api_key, synthesize_speech, transcribe_audio_bytes
+from app.speech_service import (
+    get_gnani_api_key,
+    synthesize_speech,
+    transcribe_audio_bytes,
+    stream_speech_sse,
+)
 from app.vector_store import (
     clear_vector_store,
     delete_document,
@@ -59,6 +64,12 @@ for _cand in [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()  # Create SQLite tables on startup
+    try:
+        from app.vector_store import get_embedding_function
+        get_embedding_function()
+        print("[STARTUP] Embedding model pre-warmed and ready.")
+    except Exception as e:
+        print(f"[STARTUP] Embedding pre-warm notice: {e}")
     yield
 
 
@@ -289,6 +300,11 @@ def health():
         "success": True,
         "service": "CampusSathi AI Service",
         "status": "running",
+        "models": {
+            "stt": "Gnani Prisma v3.0 (with Keyterms Boosting)",
+            "tts": "Gnani Timbre v3.0 (with Audio Tags & SSE Streaming)",
+            "llm": "Gnani Evon v3.3 (30B-A3B)",
+        },
         "documents_indexed": doc_count,
     }
 
@@ -527,3 +543,31 @@ async def speak_answer(
         raise
     except Exception:
         raise HTTPException(status_code=502, detail="Could not connect to Gnani TTS.")
+
+
+@app.post("/api/voice/stream")
+async def stream_audio_endpoint(
+    request: SpeakRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Live TTS chunk streaming via Gnani Timbre v3.0 SSE (Server-Sent Events).
+    """
+    api_key = get_gnani_api_key()
+    if not api_key:
+        raise HTTPException(status_code=503, detail="GNANI_API_KEY is not configured.")
+
+    text = request.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Text cannot be empty.")
+    if len(text) > 3000:
+        raise HTTPException(status_code=400, detail="Text must be 3000 characters or fewer.")
+
+    try:
+        return StreamingResponse(
+            stream_speech_sse(text),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Gnani SSE stream error: {str(e)}")
